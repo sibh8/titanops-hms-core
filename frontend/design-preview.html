@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MediCore HMS — Design Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<style>
+/* ══════════════════════════════════════════════════════════════
+   DESIGN PREVIEW — "Clinical Aurora"
+   MediCore HMS · March 2026
+══════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --indigo:       #6366f1;
+  --indigo-dark:  #4f46e5;
+  --violet:       #8b5cf6;
+  --cyan:         #06b6d4;
+  --emerald:      #10b981;
+  --amber:        #f59e0b;
+  --rose:         #ef4444;
+  --pink:         #ec4899;
+
+  --glass-bg:     rgba(255,255,255,0.07);
+  --glass-border: rgba(255,255,255,0.13);
+  --glass-card:   rgba(255,255,255,0.92);
+  --glass-hover:  rgba(255,255,255,0.11);
+
+  --text-on-dark:  rgba(255,255,255,0.95);
+  --muted-on-dark: rgba(255,255,255,0.50);
+  --dim-on-dark:   rgba(255,255,255,0.28);
+
+  --sidebar-w: 256px;
+  --header-h:  64px;
+  --radius:    14px;
+  --radius-sm: 8px;
+  --radius-pill: 999px;
+}
+
+/* ── Animated mesh background ─────────────────────────────── */
+body {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  height: 100vh;
+  background: #0d0d1a;
+}
+
+.mesh-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: #0d0d1a;
+  overflow: hidden;
+}
+/* large soft orbs */
+.mesh-bg::before {
+  content: '';
+  position: absolute;
+  width: 900px; height: 900px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99,102,241,0.35) 0%, transparent 70%);
+  top: -300px; left: -200px;
+  animation: drift1 18s ease-in-out infinite alternate;
+}
+.mesh-bg::after {
+  content: '';
+  position: absolute;
+  width: 700px; height: 700px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139,92,246,0.28) 0%, transparent 70%);
+  bottom: -200px; right: -100px;
+  animation: drift2 22s ease-in-out infinite alternate;
+}
+.orb3 {
+  position: absolute;
+  width: 500px; height: 500px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(6,182,212,0.18) 0%, transparent 70%);
+  bottom: 100px; left: 40%;
+  animation: drift3 15s ease-in-out infinite alternate;
+}
+@keyframes drift1 { from { transform: translate(0,0) scale(1); }   to { transform: translate(60px, 80px) scale(1.15); } }
+@keyframes drift2 { from { transform: translate(0,0) scale(1); }   to { transform: translate(-50px,-60px) scale(1.1); } }
+@keyframes drift3 { from { transform: translate(0,0) scale(1); }   to { transform: translate(40px,-40px) scale(1.08); } }
+
+/* subtle grain overlay */
+.mesh-bg .grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+/* ── App shell ────────────────────────────────────────────── */
+.app-shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+.main-wrapper { display: flex; flex: 1; overflow: hidden; }
+
+/* ══════════════════════════════════════════
+   HEADER — Frosted glass bar
+══════════════════════════════════════════ */
+.app-header {
+  height: var(--header-h);
+  background: rgba(13,13,26,0.55);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 50;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.header-brand-badge {
+  width: 36px; height: 36px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--indigo), var(--violet));
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 20px rgba(99,102,241,0.5);
+}
+.header-brand-badge svg { width: 20px; height: 20px; }
+.header-brand-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-on-dark);
+  letter-spacing: -.02em;
+}
+.header-brand-tag {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--muted-on-dark);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  margin-left: 4px;
+}
+
+.header-search {
+  flex: 1;
+  max-width: 360px;
+  margin: 0 24px;
+  position: relative;
+}
+.header-search svg {
+  position: absolute;
+  left: 12px; top: 50%;
+  transform: translateY(-50%);
+  width: 15px; height: 15px;
+  color: var(--muted-on-dark);
+}
+.header-search input {
+  width: 100%;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  padding: 8px 16px 8px 36px;
+  font-size: 0.85rem;
+  color: var(--text-on-dark);
+  font-family: inherit;
+  outline: none;
+  transition: background .2s, border-color .2s, box-shadow .2s;
+}
+.header-search input::placeholder { color: var(--muted-on-dark); }
+.header-search input:focus {
+  background: rgba(99,102,241,0.12);
+  border-color: var(--indigo);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+}
+
+.header-right { display: flex; align-items: center; gap: 6px; }
+.h-icon-btn {
+  width: 36px; height: 36px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--muted-on-dark);
+  transition: all .15s;
+  position: relative;
+}
+.h-icon-btn:hover { background: var(--glass-hover); color: var(--text-on-dark); }
+.h-icon-btn svg { width: 17px; height: 17px; }
+.h-dot {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 7px; height: 7px;
+  background: var(--rose);
+  border-radius: 50%;
+  border: 1.5px solid #0d0d1a;
+}
+
+.h-divider { width: 1px; height: 28px; background: var(--glass-border); margin: 0 6px; }
+
+.h-user {
+  display: flex; align-items: center; gap: 9px;
+  padding: 4px 10px 4px 6px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  transition: background .15s;
+}
+.h-user:hover { background: var(--glass-hover); }
+.avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--indigo), var(--cyan));
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.h-user-name { font-size: 0.82rem; font-weight: 600; color: var(--text-on-dark); }
+.h-user-role { font-size: 0.68rem; color: var(--muted-on-dark); }
+
+.h-logout {
+  padding: 6px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  background: rgba(239,68,68,0.12);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: var(--radius-pill);
+  color: #fca5a5;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: inherit;
+}
+.h-logout:hover { background: rgba(239,68,68,0.25); color: #fff; }
+
+/* ══════════════════════════════════════════
+   SIDEBAR — Glassmorphism panel
+══════════════════════════════════════════ */
+.sidebar {
+  width: var(--sidebar-w);
+  background: rgba(13,13,26,0.5);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-right: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-shrink: 0;
+}
+
+.sidebar-section {
+  padding: 20px 16px 5px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--dim-on-dark);
+  text-transform: uppercase;
+  letter-spacing: .12em;
+}
+.sidebar-nav { list-style: none; padding: 2px 10px 4px; }
+.sidebar-nav li + li { margin-top: 2px; }
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--muted-on-dark);
+  text-decoration: none;
+  transition: all .15s;
+  cursor: pointer;
+}
+.nav-link:hover {
+  background: var(--glass-hover);
+  color: var(--text-on-dark);
+}
+.nav-link.active {
+  background: linear-gradient(135deg, rgba(99,102,241,0.3), rgba(139,92,246,0.3));
+  border: 1px solid rgba(99,102,241,0.35);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(99,102,241,0.2), inset 0 1px 0 rgba(255,255,255,0.08);
+}
+.nav-icon { width: 17px; height: 17px; flex-shrink: 0; opacity: .75; transition: opacity .15s; }
+.nav-link:hover .nav-icon,
+.nav-link.active .nav-icon { opacity: 1; }
+.nav-badge {
+  margin-left: auto;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--indigo), var(--violet));
+  color: #fff;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+}
+
+/* ══════════════════════════════════════════
+   PAGE CONTENT
+══════════════════════════════════════════ */
+.page-content {
+  flex: 1;
+  padding: 28px 32px;
+  overflow-y: auto;
+  height: calc(100vh - var(--header-h));
+}
+
+/* Page header */
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+.page-header-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-on-dark);
+  letter-spacing: -.03em;
+  line-height: 1.2;
+}
+.page-header-sub {
+  font-size: 0.82rem;
+  color: var(--muted-on-dark);
+  margin-top: 3px;
+}
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 18px;
+  background: linear-gradient(135deg, var(--indigo), var(--violet));
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+  box-shadow: 0 4px 14px rgba(99,102,241,0.4);
+  text-decoration: none;
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(99,102,241,0.5);
+}
+.btn-primary svg { width: 15px; height: 15px; }
+
+/* ══════════════════════════════════════════
+   STAT CARDS
+══════════════════════════════════════════ */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  border-radius: var(--radius);
+  padding: 22px 22px 20px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .2s, box-shadow .2s;
+  border: 1px solid rgba(255,255,255,0.12);
+}
+.stat-card:hover { transform: translateY(-3px); }
+
+.stat-card--indigo {
+  background: linear-gradient(135deg, #4338ca 0%, #6366f1 60%, #818cf8 100%);
+  box-shadow: 0 8px 32px rgba(99,102,241,0.4);
+}
+.stat-card--violet {
+  background: linear-gradient(135deg, #6d28d9 0%, #8b5cf6 60%, #a78bfa 100%);
+  box-shadow: 0 8px 32px rgba(139,92,246,0.4);
+}
+.stat-card--amber {
+  background: linear-gradient(135deg, #d97706 0%, #f59e0b 60%, #fbbf24 100%);
+  box-shadow: 0 8px 32px rgba(245,158,11,0.4);
+}
+.stat-card--emerald {
+  background: linear-gradient(135deg, #059669 0%, #10b981 60%, #34d399 100%);
+  box-shadow: 0 8px 32px rgba(16,185,129,0.4);
+}
+
+/* sheen */
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: -40%; left: -20%;
+  width: 60%; height: 180%;
+  background: rgba(255,255,255,0.08);
+  transform: rotate(20deg);
+  pointer-events: none;
+}
+/* large faint blob */
+.stat-card::after {
+  content: '';
+  position: absolute;
+  width: 160px; height: 160px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  bottom: -60px; right: -30px;
+  pointer-events: none;
+}
+
+.stat-icon-wrap {
+  width: 44px; height: 44px;
+  background: rgba(255,255,255,0.18);
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px;
+  backdrop-filter: blur(6px);
+}
+.stat-icon-wrap svg { width: 22px; height: 22px; color: #fff; }
+
+.stat-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 4px;
+}
+.stat-value {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+  letter-spacing: -.04em;
+}
+.stat-trend {
+  margin-top: 10px;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.75);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.stat-trend svg { width: 13px; height: 13px; color: rgba(255,255,255,0.9); }
+
+/* ══════════════════════════════════════════
+   GLASS CARDS
+══════════════════════════════════════════ */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+.glass-card {
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.glass-card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.glass-card-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-on-dark);
+}
+.glass-card-body { padding: 6px 0; }
+
+/* Table */
+.preview-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+.preview-table th {
+  padding: 10px 20px;
+  text-align: left;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--dim-on-dark);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.preview-table td {
+  padding: 11px 20px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.8);
+  vertical-align: middle;
+}
+.preview-table tr:hover td { background: rgba(255,255,255,0.03); }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.pill--green  { background: rgba(16,185,129,0.18);  color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+.pill--amber  { background: rgba(245,158,11,0.18);  color: #fcd34d; border: 1px solid rgba(245,158,11,0.3); }
+.pill--rose   { background: rgba(239,68,68,0.18);   color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+.pill--blue   { background: rgba(99,102,241,0.18);  color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
+
+/* Mini chart area */
+.mini-chart {
+  padding: 16px 20px;
+}
+.chart-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 80px;
+}
+.bar {
+  flex: 1;
+  border-radius: 4px 4px 0 0;
+  opacity: .8;
+  transition: opacity .15s;
+}
+.bar:hover { opacity: 1; }
+.chart-labels {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.chart-labels span {
+  flex: 1;
+  font-size: 0.6rem;
+  color: var(--dim-on-dark);
+  text-align: center;
+}
+
+/* Quick actions */
+.quick-actions { padding: 14px 20px; display: flex; flex-direction: column; gap: 8px; }
+.qa-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  cursor: pointer;
+  transition: all .15s;
+}
+.qa-item:hover { background: rgba(255,255,255,0.09); border-color: rgba(99,102,241,0.4); }
+.qa-icon {
+  width: 32px; height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+}
+.qa-icon svg { width: 15px; height: 15px; }
+.qa-text { flex: 1; }
+.qa-title { font-size: 0.83rem; font-weight: 600; color: var(--text-on-dark); }
+.qa-sub   { font-size: 0.7rem; color: var(--muted-on-dark); }
+.qa-arrow { color: var(--dim-on-dark); }
+.qa-arrow svg { width: 14px; height: 14px; }
+
+/* ── Scrollbar ─── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,.22); }
+
+/* ── Preview watermark ─── */
+.preview-watermark {
+  position: fixed;
+  bottom: 14px;
+  right: 18px;
+  font-size: 0.72rem;
+  color: var(--dim-on-dark);
+  z-index: 999;
+  background: rgba(0,0,0,.4);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<!-- Animated mesh background -->
+<div class="mesh-bg">
+  <div class="orb3"></div>
+  <div class="grain"></div>
+</div>
+
+<!-- Preview badge -->
+<div class="preview-watermark">⚡ Design Preview — Clinical Aurora</div>
+
+<!-- App Shell -->
+<div class="app-shell">
+
+  <!-- ═══ HEADER ═══ -->
+  <header class="app-header">
+    <div class="header-brand">
+      <div class="header-brand-badge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+        </svg>
+      </div>
+      <span class="header-brand-name">MediCore HMS</span>
+      <span class="header-brand-tag">v2.0</span>
+    </div>
+
+    <div class="header-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input type="text" placeholder="Search patients, appointments…" />
+    </div>
+
+    <div class="header-right">
+      <!-- Notification -->
+      <button class="h-icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+        <span class="h-dot"></span>
+      </button>
+      <!-- Calendar -->
+      <button class="h-icon-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      </button>
+      <div class="h-divider"></div>
+      <!-- User -->
+      <div class="h-user">
+        <div class="avatar">DW</div>
+        <div>
+          <div class="h-user-name">Dr. Wilson</div>
+          <div class="h-user-role">Administrator</div>
+        </div>
+      </div>
+      <button class="h-logout">Sign out</button>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN ═══ -->
+  <div class="main-wrapper">
+
+    <!-- ═══ SIDEBAR ═══ -->
+    <nav class="sidebar">
+
+      <div class="sidebar-section">Overview</div>
+      <ul class="sidebar-nav">
+        <li>
+          <div class="nav-link active">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            Dashboard
+          </div>
+        </li>
+      </ul>
+
+      <div class="sidebar-section">Clinical</div>
+      <ul class="sidebar-nav">
+        <li>
+          <div class="nav-link">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+            Patients
+            <span class="nav-badge">284</span>
+          </div>
+        </li>
+        <li>
+          <div class="nav-link">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+            Appointments
+          </div>
+        </li>
+        <li>
+          <div class="nav-link">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            Encounters
+          </div>
+        </li>
+      </ul>
+
+      <div class="sidebar-section">Services</div>
+      <ul class="sidebar-nav">
+        <li>
+          <div class="nav-link">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v11l-4 5h14l-4-5V3"/>
+            </svg>
+            Lab Orders
+            <span class="nav-badge" style="background: linear-gradient(135deg,#d97706,#f59e0b)">12</span>
+          </div>
+        </li>
+        <li>
+          <div class="nav-link">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><line x1="8.5" y1="8.5" x2="15.5" y2="15.5"/>
+            </svg>
+            Medications
+          </div>
+        </li>
+        <li>
+          <div class="nav-link">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+            </svg>
+            Prescriptions
+          </div>
+        </li>
+      </ul>
+
+      <div class="sidebar-section">Finance</div>
+      <ul class="sidebar-nav">
+        <li>
+          <div class="nav-link">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+            Billing
+          </div>
+        </li>
+      </ul>
+
+      <div class="sidebar-section">Admin</div>
+      <ul class="sidebar-nav">
+        <li>
+          <div class="nav-link">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            Providers
+          </div>
+        </li>
+        <li>
+          <div class="nav-link">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/>
+            </svg>
+            Users
+          </div>
+        </li>
+      </ul>
+
+    </nav>
+
+    <!-- ═══ PAGE CONTENT ═══ -->
+    <main class="page-content">
+
+      <!-- Page header -->
+      <div class="page-header">
+        <div>
+          <div class="page-header-title">Dashboard</div>
+          <div class="page-header-sub">Wednesday, March 19, 2026 &nbsp;·&nbsp; Welcome back, Dr. Wilson</div>
+        </div>
+        <a href="#" class="btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          New Patient
+        </a>
+      </div>
+
+      <!-- Stat Cards -->
+      <div class="stat-grid">
+
+        <div class="stat-card stat-card--indigo">
+          <div class="stat-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+          </div>
+          <div class="stat-label">Total Patients</div>
+          <div class="stat-value">2,847</div>
+          <div class="stat-trend">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="18 15 12 9 6 15"/>
+            </svg>
+            +12% from last month
+          </div>
+        </div>
+
+        <div class="stat-card stat-card--violet">
+          <div class="stat-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+          <div class="stat-label">Appointments</div>
+          <div class="stat-value">143</div>
+          <div class="stat-trend">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="18 15 12 9 6 15"/>
+            </svg>
+            18 scheduled today
+          </div>
+        </div>
+
+        <div class="stat-card stat-card--amber">
+          <div class="stat-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v11l-4 5h14l-4-5V3"/>
+            </svg>
+          </div>
+          <div class="stat-label">Pending Lab Orders</div>
+          <div class="stat-value">36</div>
+          <div class="stat-trend">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="18 9 12 15 6 9"/>
+            </svg>
+            Awaiting results
+          </div>
+        </div>
+
+        <div class="stat-card stat-card--emerald">
+          <div class="stat-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+            </svg>
+          </div>
+          <div class="stat-label">Invoices</div>
+          <div class="stat-value">$94k</div>
+          <div class="stat-trend">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="18 15 12 9 6 15"/>
+            </svg>
+            +8% revenue this month
+          </div>
+        </div>
+
+      </div><!-- /stat-grid -->
+
+      <!-- Two-column lower section -->
+      <div class="two-col">
+
+        <!-- Recent Patients table -->
+        <div class="glass-card">
+          <div class="glass-card-header">
+            <span class="glass-card-title">Recent Patients</span>
+            <a href="#" style="font-size:0.78rem;color:#a5b4fc;text-decoration:none">View all →</a>
+          </div>
+          <div class="glass-card-body">
+            <table class="preview-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Condition</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:9px">
+                      <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#fff">EJ</div>
+                      <span>Emma Johnson</span>
+                    </div>
+                  </td>
+                  <td style="color:rgba(255,255,255,0.55)">Hypertension</td>
+                  <td><span class="pill pill--green">Active</span></td>
+                  <td style="color:rgba(255,255,255,0.45);font-size:0.78rem">Mar 19</td>
+                </tr>
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:9px">
+                      <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#ec4899);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#fff">MC</div>
+                      <span>Michael Chen</span>
+                    </div>
+                  </td>
+                  <td style="color:rgba(255,255,255,0.55)">Diabetes T2</td>
+                  <td><span class="pill pill--amber">Follow-up</span></td>
+                  <td style="color:rgba(255,255,255,0.45);font-size:0.78rem">Mar 18</td>
+                </tr>
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:9px">
+                      <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#06b6d4,#10b981);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#fff">SR</div>
+                      <span>Sarah Roberts</span>
+                    </div>
+                  </td>
+                  <td style="color:rgba(255,255,255,0.55)">Fracture recovery</td>
+                  <td><span class="pill pill--blue">Admitted</span></td>
+                  <td style="color:rgba(255,255,255,0.45);font-size:0.78rem">Mar 17</td>
+                </tr>
+                <tr>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:9px">
+                      <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ef4444);display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#fff">AP</div>
+                      <span>Alex Patel</span>
+                    </div>
+                  </td>
+                  <td style="color:rgba(255,255,255,0.55)">Post-surgery</td>
+                  <td><span class="pill pill--rose">Critical</span></td>
+                  <td style="color:rgba(255,255,255,0.45);font-size:0.78rem">Mar 16</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Right column: mini chart + quick actions -->
+        <div style="display:flex;flex-direction:column;gap:18px">
+
+          <!-- Mini bar chart -->
+          <div class="glass-card">
+            <div class="glass-card-header">
+              <span class="glass-card-title">Appointments This Week</span>
+              <span style="font-size:0.75rem;color:rgba(165,180,252,0.8)">+23% vs last week</span>
+            </div>
+            <div class="mini-chart">
+              <div class="chart-bars">
+                <div class="bar" style="height:35%;background:linear-gradient(180deg,#6366f1,rgba(99,102,241,0.3))"></div>
+                <div class="bar" style="height:55%;background:linear-gradient(180deg,#6366f1,rgba(99,102,241,0.3))"></div>
+                <div class="bar" style="height:45%;background:linear-gradient(180deg,#6366f1,rgba(99,102,241,0.3))"></div>
+                <div class="bar" style="height:80%;background:linear-gradient(180deg,#8b5cf6,rgba(139,92,246,0.3))"></div>
+                <div class="bar" style="height:65%;background:linear-gradient(180deg,#8b5cf6,rgba(139,92,246,0.3))"></div>
+                <div class="bar" style="height:90%;background:linear-gradient(180deg,#a78bfa,rgba(167,139,250,0.5));box-shadow:0 0 12px rgba(167,139,250,0.4)"></div>
+                <div class="bar" style="height:70%;background:linear-gradient(180deg,#6366f1,rgba(99,102,241,0.3))"></div>
+              </div>
+              <div class="chart-labels">
+                <span>Mon</span><span>Tue</span><span>Wed</span>
+                <span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="glass-card">
+            <div class="glass-card-header">
+              <span class="glass-card-title">Quick Actions</span>
+            </div>
+            <div class="quick-actions">
+              <div class="qa-item">
+                <div class="qa-icon" style="background:rgba(99,102,241,0.2)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+                  </svg>
+                </div>
+                <div class="qa-text">
+                  <div class="qa-title">Register new patient</div>
+                  <div class="qa-sub">Add patient to the system</div>
+                </div>
+                <div class="qa-arrow">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+              </div>
+              <div class="qa-item">
+                <div class="qa-icon" style="background:rgba(139,92,246,0.2)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+                  </svg>
+                </div>
+                <div class="qa-text">
+                  <div class="qa-title">Schedule appointment</div>
+                  <div class="qa-sub">Book with a provider</div>
+                </div>
+                <div class="qa-arrow">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+              </div>
+              <div class="qa-item">
+                <div class="qa-icon" style="background:rgba(245,158,11,0.2)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#fcd34d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v11l-4 5h14l-4-5V3"/>
+                  </svg>
+                </div>
+                <div class="qa-text">
+                  <div class="qa-title">Create lab order</div>
+                  <div class="qa-sub">Request diagnostic tests</div>
+                </div>
+                <div class="qa-arrow">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /right col -->
+
+      </div><!-- /two-col -->
+
+    </main>
+  </div><!-- /main-wrapper -->
+</div><!-- /app-shell -->
+
+</body>
+</html>

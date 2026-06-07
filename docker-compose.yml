@@ -1,0 +1,207 @@
+version: '3.8'
+
+x-db-env: &db-env
+  SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://mysql:3306/medicore_hms?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+  SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-medicore}
+  SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-medicore_pass}
+  SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
+
+x-otel-env: &otel-env
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4317}
+  OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-otlp}
+  OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-otlp}  
+  OTEL_LOGS_EXPORTER: ${OTEL_LOGS_EXPORTER:-otlp}
+  SPRING_AUTOCONFIGURE_EXCLUDE: io.opentelemetry.instrumentation.spring.autoconfigure.OpenTelemetryAutoConfiguration
+
+services:
+
+  # ─── Database ──────────────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: medicore-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_pass}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-medicore_hms}
+      MYSQL_USER: ${SPRING_DATASOURCE_USERNAME:-medicore}
+      MYSQL_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-medicore_pass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "${SPRING_DATASOURCE_USERNAME:-medicore}", "-p${SPRING_DATASOURCE_PASSWORD:-medicore_pass}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ─── Observability ─────────────────────────────────────────────────────────
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: medicore-jaeger
+    restart: unless-stopped
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "14250:14250" # Jaeger gRPC collector
+      - "14268:14268" # Jaeger HTTP collector
+
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP HTTP receiver
+    depends_on:
+      - jaeger
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/etc/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_DATASOURCES_DEFAULT_NAME=Prometheus
+      - GF_DATASOURCES_DEFAULT_TYPE=prometheus
+      - GF_DATASOURCES_DEFAULT_URL=http://prometheus:9090
+      - GF_DATASOURCES_DEFAULT_ACCESS=proxy
+      - GF_DATASOURCES_DEFAULT_IS_DEFAULT=true
+
+  # ─── Microservices ─────────────────────────────────────────────────────────
+  patient-service:
+    build: ./patient-service
+    ports:
+      - "8081:8081"
+    environment:
+      <<: [*db-env, *otel-env]
+      OTEL_SERVICE_NAME: patient-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  appointment-service:
+    build: ./appointment-service
+    ports:
+      - "8082:8082"
+    environment:
+      <<: [*db-env, *otel-env]
+      OTEL_SERVICE_NAME: appointment-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  user-service:
+    build: ./user-service
+    ports:
+      - "8083:8083"
+    environment:
+      <<: [*db-env, *otel-env]
+      OTEL_SERVICE_NAME: user-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  billing-service:
+    build: ./billing-service
+    ports:
+      - "8084:8084"
+    environment:
+      <<: [*db-env, *otel-env]
+      OTEL_SERVICE_NAME: billing-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  encounter-service:
+    build: ./encounter-service
+    ports:
+      - "8085:8085"
+    environment:
+      <<: [*db-env, *otel-env]
+      OTEL_SERVICE_NAME: encounter-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  lab-service:
+    build: ./lab-service
+    ports:
+      - "8086:8086"
+    environment:
+      <<: [*db-env, *otel-env]
+      OTEL_SERVICE_NAME: lab-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  medication-service:
+    build: ./medication-service
+    ports:
+      - "8087:8087"
+    environment:
+      <<: [*db-env, *otel-env]
+      OTEL_SERVICE_NAME: medication-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  prescription-service:
+    build: ./prescription-service
+    ports:
+      - "8088:8088"
+    environment:
+      <<: [*db-env, *otel-env]
+      OTEL_SERVICE_NAME: prescription-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  provider-service:
+    build: ./provider-service
+    ports:
+      - "8089:8089"
+    environment:
+      <<: [*db-env, *otel-env]
+      OTEL_SERVICE_NAME: provider-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  # ─── Frontend ────────────────────────────────────────────────────────────────
+  medicore-hms-ui:
+    build: ./frontend
+    container_name: medicore-hms-ui
+    ports:
+      - "3000:80"
+    depends_on:
+      - patient-service
+      - appointment-service
+      - user-service
+      - billing-service
+      - encounter-service
+      - lab-service
+      - medication-service
+      - prescription-service
+      - provider-service
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  mysql_data:

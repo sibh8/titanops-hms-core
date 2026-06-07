@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- OTEL MDC keys are automatically populated by opentelemetry-spring-boot-starter:
+         trace_id, span_id, trace_flags -->
+
+    <springProperty scope="context" name="SERVICE_NAME" source="spring.application.name" defaultValue="unknown-service"/>
+
+    <!--  Console appender (human-readable with OTEL context)  -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [${SERVICE_NAME}] [trace_id=%X{trace_id:-none} span_id=%X{span_id:-none}] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--  JSON appender (structured, OTEL-compatible)  -->
+    <appender name="JSON_CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>{"timestamp":"%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ}","level":"%level","service":"${SERVICE_NAME}","trace_id":"%X{trace_id:-}","span_id":"%X{span_id:-}","trace_flags":"%X{trace_flags:-}","thread":"%thread","logger":"%logger{36}","message":"%replace(%msg){'\"','\\\"'}","exception":"%replace(%ex{5}){'[\r\n]+','\\n'}"}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Switch between CONSOLE and JSON_CONSOLE via LOG_FORMAT env var -->
+    <springProfile name="!json">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+    <springProfile name="json">
+        <root level="INFO">
+            <appender-ref ref="JSON_CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <!-- Reduce noise from framework internals while keeping application logs visible -->
+    <logger name="org.springframework"         level="WARN"/>
+    <logger name="org.hibernate"               level="WARN"/>
+    <logger name="com.zaxxer.hikari"           level="WARN"/>
+    <logger name="io.opentelemetry"            level="INFO"/>
+    <logger name="com.medicore.hms"            level="DEBUG"/>
+
+</configuration>

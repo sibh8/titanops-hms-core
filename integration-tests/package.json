@@ -1,0 +1,21 @@
+{
+  "name": "medicore-integration-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "test":              "node --test --test-reporter=spec tests/00-health.test.js tests/01-users.test.js tests/02-providers.test.js tests/03-patients.test.js tests/04-appointments.test.js tests/05-encounters.test.js tests/06-lab.test.js tests/07-medications.test.js tests/08-prescriptions.test.js tests/09-billing.test.js tests/10-cross-service.test.js",
+    "test:health":       "node --test --test-reporter=spec tests/00-health.test.js",
+    "test:users":        "node --test --test-reporter=spec tests/01-users.test.js",
+    "test:providers":    "node --test --test-reporter=spec tests/02-providers.test.js",
+    "test:patients":     "node --test --test-reporter=spec tests/03-patients.test.js",
+    "test:appointments": "node --test --test-reporter=spec tests/04-appointments.test.js",
+    "test:encounters":   "node --test --test-reporter=spec tests/05-encounters.test.js",
+    "test:lab":          "node --test --test-reporter=spec tests/06-lab.test.js",
+    "test:medications":  "node --test --test-reporter=spec tests/07-medications.test.js",
+    "test:prescriptions":"node --test --test-reporter=spec tests/08-prescriptions.test.js",
+    "test:billing":      "node --test --test-reporter=spec tests/09-billing.test.js",
+    "test:cross":        "node --test --test-reporter=spec tests/10-cross-service.test.js"
+  }
+}
