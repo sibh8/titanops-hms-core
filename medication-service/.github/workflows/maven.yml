@@ -48,3 +48,17 @@ jobs:
       with:
         name: medication-service-docker-image
         path: /tmp/medication-service.tar
+
+    # ── TITANOPS-105: Trivy Container Image Vulnerability Scan ──────────────
+    - name: Load Docker image for scanning
+      run: docker load --input /tmp/medication-service.tar
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'medication-service:${{ steps.gitversion.outputs.semVer }}'
+        format: 'table'
+        exit-code: '1'
+        ignore-unfixed: true
+        vuln-type: 'os,library'
+        severity: 'CRITICAL,HIGH'

@@ -57,3 +57,17 @@ jobs:
       with:
         name: user-service-docker-image
         path: /tmp/user-service.tar
+
+    # ── TITANOPS-105: Trivy Container Image Vulnerability Scan ──────────────
+    - name: Load Docker image for scanning
+      run: docker load --input /tmp/user-service.tar
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'user-service:${{ steps.gitversion.outputs.semVer }}'
+        format: 'table'
+        exit-code: '1'
+        ignore-unfixed: true
+        vuln-type: 'os,library'
+        severity: 'CRITICAL,HIGH'
