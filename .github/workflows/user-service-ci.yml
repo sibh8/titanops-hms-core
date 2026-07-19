@@ -50,13 +50,13 @@ jobs:
       uses: github/codeql-action/analyze@v2
 
     - name: Set up GitVersion
-      uses: gittools/actions/setup-action@v0.9.15
+      uses: gittools/actions/gitversion/setup@v0.9.15
       with:
         versionSpec: '5.x'
 
     - name: Determine Version
       id: gitversion
-      uses: gittools/actions/execute-action@v0.9.15
+      uses: gittools/actions/gitversion/execute@v0.9.15
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v4
