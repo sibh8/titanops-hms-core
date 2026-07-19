@@ -17,6 +17,11 @@ defaults:
   run:
     working-directory: frontend
 
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
 jobs:
 
   # ── 1. Lint & Build ─────────────────────────────────────────────────────────

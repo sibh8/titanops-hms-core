@@ -18,6 +18,11 @@ defaults:
   run:
     working-directory: appointment-service
 
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
 jobs:
   build:
 
