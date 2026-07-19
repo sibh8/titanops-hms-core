@@ -3,8 +3,20 @@ name: Java CI with Maven
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'user-service/**'
+      - '.github/workflows/user-service-ci.yml'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'user-service/**'
+      - '.github/workflows/user-service-ci.yml'
+  workflow_dispatch:
+
+
+defaults:
+  run:
+    working-directory: user-service
 
 jobs:
   build:
@@ -31,6 +43,8 @@ jobs:
 
     - name: Autobuild
       uses: github/codeql-action/autobuild@v2
+      env:
+        working-directory: user-service
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
@@ -47,7 +61,9 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v4
       with:
-        context: .
+        context: user-service
+
+        file: user-service/Dockerfile
         push: false
         tags: user-service:${{ steps.gitversion.outputs.semVer }}
         outputs: type=docker,dest=/tmp/user-service.tar

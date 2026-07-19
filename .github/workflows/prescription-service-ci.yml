@@ -3,8 +3,20 @@ name: Java CI with Maven
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'prescription-service/**'
+      - '.github/workflows/prescription-service-ci.yml'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'prescription-service/**'
+      - '.github/workflows/prescription-service-ci.yml'
+  workflow_dispatch:
+
+
+defaults:
+  run:
+    working-directory: prescription-service
 
 jobs:
   build:
@@ -27,6 +39,8 @@ jobs:
         languages: java
     - name: Autobuild
       uses: github/codeql-action/autobuild@v2
+      env:
+        working-directory: prescription-service
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
     - name: Set up GitVersion
@@ -39,7 +53,9 @@ jobs:
     - name: Build Docker image
       uses: docker/build-push-action@v4
       with:
-        context: .
+        context: prescription-service
+
+        file: prescription-service/Dockerfile
         push: false
         tags: prescription-service:${{ steps.gitversion.outputs.semVer }}
         outputs: type=docker,dest=/tmp/prescription-service.tar

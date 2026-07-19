@@ -3,18 +3,28 @@ name: Java CI with Maven
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'medication-service/**'
+      - '.github/workflows/medication-service-ci.yml'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'medication-service/**'
+      - '.github/workflows/medication-service-ci.yml'
+  workflow_dispatch:
+
+
+defaults:
+  run:
+    working-directory: medication-service
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3
       with:
-        fetch-depth: 0 # Required for GitVersion
+        fetch-depth: 0
     - name: Set up JDK 11
       uses: actions/setup-java@v3
       with:
@@ -23,53 +33,46 @@ jobs:
         cache: maven
     - name: Build with Maven
       run: ./mvnw -B package --file pom.xml
-
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
       with:
         languages: java
-
     - name: Autobuild
       uses: github/codeql-action/autobuild@v2
-
+      env:
+        working-directory: medication-service
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
-
     - name: Set up GitVersion
       uses: gittools/actions/setup-action@v0.9.15
       with:
         versionSpec: '5.x'
-
     - name: Determine Version
       id: gitversion
       uses: gittools/actions/execute-action@v0.9.15
-
-    - name: Build and push Docker image
+    - name: Build Docker image
       uses: docker/build-push-action@v4
       with:
-        context: .
-        push: false
-        tags: patient-service:${{ steps.gitversion.outputs.semVer }}
-        outputs: type=docker,dest=/tmp/patient-service.tar
+        context: medication-service
 
+        file: medication-service/Dockerfile
+        push: false
+        tags: medication-service:${{ steps.gitversion.outputs.semVer }}
+        outputs: type=docker,dest=/tmp/medication-service.tar
     - name: Upload Docker image artifact
       uses: actions/upload-artifact@v3
       with:
-        name: patient-service-docker-image
-        path: /tmp/patient-service.tar
+        name: medication-service-docker-image
+        path: /tmp/medication-service.tar
 
     # ── TITANOPS-105: Trivy Container Image Vulnerability Scan ──────────────
-    # This step loads the Docker image we just built and scans it for known
-    # security vulnerabilities (CVEs) using Trivy before it can be deployed.
-    # If any CRITICAL or HIGH severity issues are found, this step will FAIL
-    # the entire pipeline, blocking the image from reaching production.
     - name: Load Docker image for scanning
-      run: docker load --input /tmp/patient-service.tar
+      run: docker load --input /tmp/medication-service.tar
 
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: 'patient-service:${{ steps.gitversion.outputs.semVer }}'
+        image-ref: 'medication-service:${{ steps.gitversion.outputs.semVer }}'
         format: 'table'
         exit-code: '1'
         ignore-unfixed: true

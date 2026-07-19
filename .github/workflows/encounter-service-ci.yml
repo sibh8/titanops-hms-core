@@ -3,8 +3,20 @@ name: Java CI with Maven
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'encounter-service/**'
+      - '.github/workflows/encounter-service-ci.yml'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'encounter-service/**'
+      - '.github/workflows/encounter-service-ci.yml'
+  workflow_dispatch:
+
+
+defaults:
+  run:
+    working-directory: encounter-service
 
 jobs:
   build:
@@ -27,6 +39,8 @@ jobs:
         languages: java
     - name: Autobuild
       uses: github/codeql-action/autobuild@v2
+      env:
+        working-directory: encounter-service
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
     - name: Set up GitVersion
@@ -39,24 +53,26 @@ jobs:
     - name: Build Docker image
       uses: docker/build-push-action@v4
       with:
-        context: .
+        context: encounter-service
+
+        file: encounter-service/Dockerfile
         push: false
-        tags: medication-service:${{ steps.gitversion.outputs.semVer }}
-        outputs: type=docker,dest=/tmp/medication-service.tar
+        tags: encounter-service:${{ steps.gitversion.outputs.semVer }}
+        outputs: type=docker,dest=/tmp/encounter-service.tar
     - name: Upload Docker image artifact
       uses: actions/upload-artifact@v3
       with:
-        name: medication-service-docker-image
-        path: /tmp/medication-service.tar
+        name: encounter-service-docker-image
+        path: /tmp/encounter-service.tar
 
     # ── TITANOPS-105: Trivy Container Image Vulnerability Scan ──────────────
     - name: Load Docker image for scanning
-      run: docker load --input /tmp/medication-service.tar
+      run: docker load --input /tmp/encounter-service.tar
 
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: 'medication-service:${{ steps.gitversion.outputs.semVer }}'
+        image-ref: 'encounter-service:${{ steps.gitversion.outputs.semVer }}'
         format: 'table'
         exit-code: '1'
         ignore-unfixed: true

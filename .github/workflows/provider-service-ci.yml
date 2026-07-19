@@ -3,8 +3,20 @@ name: Java CI with Maven
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'provider-service/**'
+      - '.github/workflows/provider-service-ci.yml'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'provider-service/**'
+      - '.github/workflows/provider-service-ci.yml'
+  workflow_dispatch:
+
+
+defaults:
+  run:
+    working-directory: provider-service
 
 jobs:
   build:
@@ -27,6 +39,8 @@ jobs:
         languages: java
     - name: Autobuild
       uses: github/codeql-action/autobuild@v2
+      env:
+        working-directory: provider-service
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
     - name: Set up GitVersion
@@ -39,24 +53,26 @@ jobs:
     - name: Build Docker image
       uses: docker/build-push-action@v4
       with:
-        context: .
+        context: provider-service
+
+        file: provider-service/Dockerfile
         push: false
-        tags: lab-service:${{ steps.gitversion.outputs.semVer }}
-        outputs: type=docker,dest=/tmp/lab-service.tar
+        tags: provider-service:${{ steps.gitversion.outputs.semVer }}
+        outputs: type=docker,dest=/tmp/provider-service.tar
     - name: Upload Docker image artifact
       uses: actions/upload-artifact@v3
       with:
-        name: lab-service-docker-image
-        path: /tmp/lab-service.tar
+        name: provider-service-docker-image
+        path: /tmp/provider-service.tar
 
     # ── TITANOPS-105: Trivy Container Image Vulnerability Scan ──────────────
     - name: Load Docker image for scanning
-      run: docker load --input /tmp/lab-service.tar
+      run: docker load --input /tmp/provider-service.tar
 
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: 'lab-service:${{ steps.gitversion.outputs.semVer }}'
+        image-ref: 'provider-service:${{ steps.gitversion.outputs.semVer }}'
         format: 'table'
         exit-code: '1'
         ignore-unfixed: true
