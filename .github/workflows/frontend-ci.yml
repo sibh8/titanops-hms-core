@@ -86,6 +86,7 @@ jobs:
         uses: github/codeql-action/analyze@v2
         with:
           category: '/language:javascript'
+          upload: false
 
   # ── 3. Docker image build ────────────────────────────────────────────────────
   docker:

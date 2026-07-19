@@ -20,6 +20,9 @@ module.exports = {
   rules: {
     'react/prop-types': 'off',
     'react/react-in-jsx-scope': 'off',
+    'react/no-unescaped-entities': 'off',
+    'react/jsx-key': 'off',
+    'no-empty': 'off',
     'no-unused-vars': 'warn',
   },
   settings: {
