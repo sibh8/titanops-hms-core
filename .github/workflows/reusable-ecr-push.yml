@@ -1,0 +1,78 @@
+name: Reusable - Build & Push to ECR
+
+# Called by each service's *-ci.yml on push to main. Not triggered directly.
+#
+# STAGE (TITANOPS-22): tooling scaffold only. AWS OIDC auth, kubectl, and helm
+# are wired up and verified here. The actual image build-and-push step is
+# added in TITANOPS-21.
+#
+# Requires these GitHub Actions repository (or environment) variables:
+#   AWS_REGION          e.g. ap-south-1
+#   AWS_ACCOUNT_ID       12-digit AWS account ID
+#   AWS_OIDC_ROLE_ARN    IAM role ARN created by infra/bootstrap-oidc (OIDC trust, no static keys)
+#   EKS_CLUSTER_NAME     (optional) defaults to medicore-hms-eks; only used once Sprint 2 provisions the cluster
+
+on:
+  workflow_call:
+    inputs:
+      service_name:
+        description: "Service directory name; also used as the ECR repo suffix (medicore-hms/<service_name>)"
+        required: true
+        type: string
+      context_dir:
+        description: "Docker build context directory"
+        required: true
+        type: string
+      dockerfile:
+        description: "Path to the Dockerfile"
+        required: true
+        type: string
+
+permissions:
+  id-token: write   # required to mint the OIDC token for AWS
+  contents: read
+
+jobs:
+  build-and-push:
+    name: Build & Push {{{{ inputs.service_name }}}}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC — no static keys)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{{{ vars.AWS_OIDC_ROLE_ARN }}}}
+          aws-region: ${{{{ vars.AWS_REGION }}}}
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.29.0'
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Verify cluster tooling
+        run: |
+          echo "kubectl and helm are installed and available to this pipeline:"
+          kubectl version --client
+          helm version
+          echo ""
+          echo "Attempting to reach the EKS cluster (will only succeed once Sprint 2 / TITANOPS-15 provisions it):"
+          CLUSTER_NAME="${{{{ vars.EKS_CLUSTER_NAME || 'medicore-hms-eks' }}}}"
+          aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "${{{{ vars.AWS_REGION }}}}" \
+            && kubectl get nodes \
+            || echo "EKS cluster '$CLUSTER_NAME' not reachable yet — expected until Sprint 2 infra is applied. Not failing the build."
+
+      # NOTE (TITANOPS-21): the actual `docker build --push` to ECR is added
+      # in the next stage, once the image-push requirements are implemented.
