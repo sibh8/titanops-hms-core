@@ -33,21 +33,16 @@ jobs:
         java-version: '11'
         distribution: 'temurin'
         cache: maven
-    - name: Make Maven wrapper executable
-      run: chmod +x mvnw
-
-    - name: Build with Maven
-      run: ./mvnw -B package --file pom.xml
-
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
       with:
         languages: java
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v2
-      env:
-        working-directory: patient-service
+    - name: Make Maven wrapper executable
+      run: chmod +x mvnw
+
+    - name: Build with Maven
+      run: ./mvnw -B package --file pom.xml
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
