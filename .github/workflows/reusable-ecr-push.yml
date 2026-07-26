@@ -9,7 +9,7 @@ on:
         type: string
       context_dir:
         description: "Docker build context directory"
-        required: true
+        required: false
         type: string
       dockerfile:
         description: "Path to the Dockerfile"
