@@ -66,14 +66,15 @@ jobs:
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-    - name: Build Docker image
-      uses: docker/build-push-action@v4
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
       with:
         context: medication-service
-
         file: medication-service/Dockerfile
-        push: false
-        tags: medication-service:${{ steps.gitversion.outputs.semVer }}
+        push: ${{ github.ref == 'refs/heads/main' }}
+        tags: |
+          ghcr.io/${{ github.repository }}/medication-service:${{ steps.gitversion.outputs.semVer }}
+          ghcr.io/${{ github.repository }}/medication-service:latest
         outputs: type=docker,dest=/tmp/medication-service.tar
     - name: Upload Docker image artifact
       uses: actions/upload-artifact@v4
