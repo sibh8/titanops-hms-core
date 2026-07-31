@@ -153,7 +153,7 @@ jobs:
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'medicore-hms-ui:${{ steps.gitversion.outputs.semVer }}'
+          image-ref: 'ghcr.io/${{ github.repository }}/medicore-hms-ui:${{ steps.gitversion.outputs.semVer }}'
           format: 'table'
           exit-code: '0'
           ignore-unfixed: true
