@@ -66,14 +66,15 @@ jobs:
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-    - name: Build Docker image
-      uses: docker/build-push-action@v4
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
       with:
         context: provider-service
-
         file: provider-service/Dockerfile
-        push: false
-        tags: provider-service:${{ steps.gitversion.outputs.semVer }}
+        push: ${{ github.ref == 'refs/heads/main' }}
+        tags: |
+          ghcr.io/${{ github.repository }}/provider-service:${{ steps.gitversion.outputs.semVer }}
+          ghcr.io/${{ github.repository }}/provider-service:latest
         outputs: type=docker,dest=/tmp/provider-service.tar
     - name: Upload Docker image artifact
       uses: actions/upload-artifact@v4
