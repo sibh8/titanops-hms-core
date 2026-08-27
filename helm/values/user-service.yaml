@@ -1,0 +1,14 @@
+image:
+  repository: ghcr.io/sibh8/titanops-hms-core/user-service
+  tag: latest
+
+service:
+  port: 8083
+  targetPort: 8083
+
+env:
+  SPRING_DATASOURCE_URL: "jdbc:mysql://medicore-mysql:3306/medicore_hms?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+  SPRING_DATASOURCE_USERNAME: "medicore"
+  SPRING_DATASOURCE_PASSWORD: "medicore_pass"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+  OTEL_SERVICE_NAME: "user-service"
