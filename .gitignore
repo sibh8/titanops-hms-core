@@ -27,8 +27,6 @@ test-output/
 .DS_Store
 Thumbs.db
 
-# Extra Files
-*.xlsx
 # Node / Frontend
 node_modules/
 dist/
