@@ -22,6 +22,7 @@ permissions:
   actions: read
   contents: read
   security-events: write
+  packages: write
 
 jobs:
   build:
@@ -56,16 +57,24 @@ jobs:
     - name: Determine Version
       id: gitversion
       uses: gittools/actions/gitversion/execute@v0.9.15
+    - name: Log in to the GitHub Container registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-    - name: Build Docker image
-      uses: docker/build-push-action@v4
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
       with:
         context: provider-service
-
         file: provider-service/Dockerfile
-        push: false
-        tags: provider-service:${{ steps.gitversion.outputs.semVer }}
+        push: ${{ github.ref == 'refs/heads/main' }}
+        tags: |
+          ghcr.io/${{ github.repository }}/provider-service:${{ steps.gitversion.outputs.semVer }}
+          ghcr.io/${{ github.repository }}/provider-service:latest
         outputs: type=docker,dest=/tmp/provider-service.tar
     - name: Upload Docker image artifact
       uses: actions/upload-artifact@v4
@@ -80,9 +89,23 @@ jobs:
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
       with:
-        image-ref: 'provider-service:${{ steps.gitversion.outputs.semVer }}'
+        image-ref: 'ghcr.io/${{ github.repository }}/provider-service:${{ steps.gitversion.outputs.semVer }}'
         format: 'table'
         exit-code: '0'
         ignore-unfixed: true
         vuln-type: 'os,library'
         severity: 'CRITICAL,HIGH'
+
+
+  verify-tooling:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/reusable-ecr-push.yml
+    with:
+      service_name: provider-service
+      context_dir: provider-service
+      dockerfile: provider-service/Dockerfile
+    permissions:
+      id-token: write
+      contents: read
+      packages: write
