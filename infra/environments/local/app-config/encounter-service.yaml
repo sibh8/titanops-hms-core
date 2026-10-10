@@ -1,0 +1,14 @@
+image:
+  repository: ghcr.io/sibh8/titanops-hms-core/encounter-service
+  tag: latest
+
+service:
+  port: 8085
+  targetPort: 8085
+
+env:
+  SPRING_DATASOURCE_URL: "jdbc:mysql://medicore-mysql:3306/medicore_hms?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+  SPRING_DATASOURCE_USERNAME: "medicore"
+  SPRING_DATASOURCE_PASSWORD: "medicore_pass"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+  OTEL_SERVICE_NAME: "encounter-service"

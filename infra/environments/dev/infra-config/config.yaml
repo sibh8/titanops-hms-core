@@ -1,0 +1,67 @@
+# ============================================================================
+# DEV environment - deploys to AWS (EKS + RDS). Single source of truth.
+# ============================================================================
+name: titanops-hms
+target: aws
+namespace: hms
+
+tags:
+  Project: titanops-hms
+  Environment: dev
+  ManagedBy: terraform
+
+aws:
+  region: ap-south-1
+  vpc_cidr: 10.0.0.0/16
+  azs:
+    - ap-south-1a
+    - ap-south-1b
+  public_subnets:
+    - 10.0.1.0/24
+    - 10.0.2.0/24
+  private_app_subnets:
+    - 10.0.11.0/24
+    - 10.0.12.0/24
+  private_db_subnets:
+    - 10.0.21.0/24
+    - 10.0.22.0/24
+  k8s_version: "1.30"
+  eks_public_access: false
+  node_instance_type: m5.large
+  node_desired: 2
+  node_min: 2
+  node_max: 4
+
+database:
+  name: medicore_hms
+  username: medicore
+  instance_class: db.t3.medium
+  multi_az: true
+
+github:
+  org: sibh8
+  repo: titanops-hms-core
+  branches:
+    - main
+
+# Optional services - flip to true only for demos. Setting back to false
+# makes Terraform destroy the created resources on next apply.
+features:
+  cloudwatch: false
+  guardduty: false
+  security_hub: false
+  secrets_manager: false
+  external_secrets: false
+
+# Per-service enable switch. Disable one -> Terraform removes its Helm release.
+services:
+  patient-service: { enabled: true }
+  user-service: { enabled: true }
+  appointment-service: { enabled: true }
+  billing-service: { enabled: true }
+  encounter-service: { enabled: true }
+  lab-service: { enabled: true }
+  medication-service: { enabled: true }
+  prescription-service: { enabled: true }
+  provider-service: { enabled: true }
+  frontend: { enabled: true }

@@ -1,0 +1,16 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/sibh8/titanops-hms-core/medicore-hms-ui
+  tag: latest
+
+service:
+  port: 80
+  targetPort: 80
+
+env:
+  VITE_API_BASE_URL: ""
+
+probes:
+  livenessPath: /health
+  readinessPath: /health

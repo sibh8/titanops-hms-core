@@ -1,0 +1,15 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/sibh8/titanops-hms-core/prescription-service
+  tag: latest
+
+service:
+  port: 8088
+  targetPort: 8088
+
+env:
+  SPRING_DATASOURCE_USERNAME: "medicore"
+  SPRING_DATASOURCE_PASSWORD: "medicore_pass"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+  OTEL_SERVICE_NAME: "prescription-service"

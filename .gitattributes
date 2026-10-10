@@ -1,0 +1,2 @@
+# Keep shell scripts LF so shebangs work on Linux/macOS regardless of host OS.
+*.sh text eol=lf
