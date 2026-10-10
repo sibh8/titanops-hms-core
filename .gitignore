@@ -26,3 +26,6 @@ test-output/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Extra Files
+*.xlsx
