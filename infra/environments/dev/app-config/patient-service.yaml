@@ -1,0 +1,16 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/sibh8/titanops-hms-core/patient-service
+  tag: latest
+
+service:
+  port: 8081
+  targetPort: 8081
+
+# SPRING_DATASOURCE_URL is injected by the stack with the RDS endpoint.
+env:
+  SPRING_DATASOURCE_USERNAME: "medicore"
+  SPRING_DATASOURCE_PASSWORD: "medicore_pass"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+  OTEL_SERVICE_NAME: "patient-service"

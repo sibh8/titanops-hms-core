@@ -1,0 +1,46 @@
+# ============================================================================
+# LOCAL environment - spins up minikube and deploys the same Helm charts.
+# No AWS resources are created (all AWS modules are count=0).
+# ============================================================================
+name: titanops-hms
+target: local
+namespace: hms
+
+tags:
+  Project: titanops-hms
+  Environment: local
+
+# Minikube cluster is created/destroyed by Terraform (requires minikube CLI).
+minikube:
+  profile: hms-core
+  driver: docker
+  cpus: 4
+  memory: 8192
+  kubernetes_version: stable
+  autostart: true
+  delete_on_destroy: true
+
+database:
+  name: medicore_hms
+  username: medicore
+
+# No AWS features apply locally - kept here for schema parity, all off.
+features:
+  cloudwatch: false
+  guardduty: false
+  security_hub: false
+  secrets_manager: false
+  external_secrets: false
+
+# Per-service enable switch - identical set to dev.
+services:
+  patient-service: { enabled: true }
+  user-service: { enabled: true }
+  appointment-service: { enabled: true }
+  billing-service: { enabled: true }
+  encounter-service: { enabled: true }
+  lab-service: { enabled: true }
+  medication-service: { enabled: true }
+  prescription-service: { enabled: true }
+  provider-service: { enabled: true }
+  frontend: { enabled: true }
