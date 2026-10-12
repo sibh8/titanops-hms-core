@@ -1,0 +1,62 @@
+name: AWS OIDC Access Verification
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'infra/infra-stack/modules/iam-oidc/**'
+      - '.github/workflows/aws-oidc-verify.yml'
+
+permissions:
+  id-token: write   # Required for requesting JWT from GitHub OIDC provider
+  contents: read    # Required for actions/checkout
+
+jobs:
+  verify-oidc:
+    name: Verify AWS OIDC & EKS Access
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate OIDC Role Variable
+        id: check-vars
+        run: |
+          if [ -z "${{ vars.AWS_OIDC_ROLE_ARN }}" ]; then
+            echo "::warning ::AWS_OIDC_ROLE_ARN is not set in GitHub repository variables."
+            echo "To enable live AWS OIDC authentication, configure AWS_OIDC_ROLE_ARN in GitHub Repo Settings -> Secrets and variables -> Actions -> Variables."
+            echo "has_role=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_role=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Configure AWS credentials via OIDC
+        if: steps.check-vars.outputs.has_role == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-south-1' }}
+          audience: sts.amazonaws.com
+
+      - name: Verify AWS Identity (No Static Keys)
+        if: steps.check-vars.outputs.has_role == 'true'
+        run: |
+          echo "=== Verifying assumed IAM role via AWS STS ==="
+          aws sts get-caller-identity
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.30.0'
+
+      - name: Verify EKS Cluster & Node Access
+        if: steps.check-vars.outputs.has_role == 'true'
+        run: |
+          CLUSTER_NAME="${{ vars.EKS_CLUSTER_NAME || 'titanops-hms' }}"
+          REGION="${{ vars.AWS_REGION || 'ap-south-1' }}"
+          echo "Updating kubeconfig for cluster $CLUSTER_NAME in $REGION..."
+          aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION"
+          echo "Verifying EKS node access..."
+          kubectl get nodes
