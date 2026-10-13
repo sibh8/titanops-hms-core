@@ -71,7 +71,7 @@ permissions:
 
 jobs:
   build-and-push:
-    name: Push ${{ inputs.service_name }} to ECR & Verify Tooling
+    name: Push ${{ inputs.service_name }} & Verify Tooling
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.meta.outputs.image_tag }}
@@ -82,25 +82,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── 1. Download & Load Pre-Built Image Artifact from CI Build Job ──────
-      - name: Download Docker image artifact
-        id: download-image
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ inputs.service_name }}-docker-image
-          path: /tmp
-
-      - name: Load Docker image and compute traceable tags
+      # ── 1. Compute Traceable Image Metadata (GHCR & ECR) ──────────────────
+      - name: Compute traceable image tags
         id: meta
         run: |
           set -euo pipefail
-          TAR_FILE="/tmp/${{ inputs.service_name }}.tar"
-          if [ ! -f "$TAR_FILE" ]; then
-            echo "::error ::Docker image archive $TAR_FILE not found!"
-            exit 1
-          fi
-          docker load --input "$TAR_FILE"
-
           TRACEABLE_TAG="${{ inputs.image_tag }}"
           if [ -z "$TRACEABLE_TAG" ]; then
             TRACEABLE_TAG="${{ github.sha }}"
@@ -111,16 +97,12 @@ jobs:
             ECR_SURNAME="${{ inputs.service_name }}"
           fi
 
-          SOURCE_IMAGE="ghcr.io/${{ github.repository }}/${{ inputs.service_name }}:${TRACEABLE_TAG}"
-          if ! docker image inspect "$SOURCE_IMAGE" >/dev/null 2>&1; then
-            SOURCE_IMAGE="ghcr.io/${{ github.repository }}/${{ inputs.service_name }}:latest"
-          fi
-
-          echo "source_image=$SOURCE_IMAGE" >> "$GITHUB_OUTPUT"
+          GHCR_IMAGE="ghcr.io/${{ github.repository }}/${{ inputs.service_name }}:${TRACEABLE_TAG}"
+          echo "source_image=$GHCR_IMAGE" >> "$GITHUB_OUTPUT"
           echo "image_tag=$TRACEABLE_TAG" >> "$GITHUB_OUTPUT"
           echo "ecr_repo=titanops-hms/$ECR_SURNAME" >> "$GITHUB_OUTPUT"
-          echo "ghcr_image_uri=ghcr.io/${{ github.repository }}/${{ inputs.service_name }}:${TRACEABLE_TAG}" >> "$GITHUB_OUTPUT"
-          echo "Loaded image: $SOURCE_IMAGE (Traceable Tag: $TRACEABLE_TAG, Commit SHA: ${{ github.sha }})"
+          echo "ghcr_image_uri=$GHCR_IMAGE" >> "$GITHUB_OUTPUT"
+          echo "Verified traceable image URI: $GHCR_IMAGE (Commit SHA: ${{ github.sha }})"
 
       # ── 2. Check AWS OIDC Configuration ────────────────────────────────────
       - name: Check AWS OIDC Role Configuration
@@ -128,13 +110,21 @@ jobs:
         run: |
           if [ -n "${{ vars.AWS_OIDC_ROLE_ARN }}" ]; then
             echo "aws_enabled=true" >> "$GITHUB_OUTPUT"
-            echo "AWS_OIDC_ROLE_ARN detected. Proceeding with Amazon ECR push."
+            echo "AWS_OIDC_ROLE_ARN detected. Proceeding with Amazon ECR mirror push."
           else
             echo "aws_enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice ::AWS_OIDC_ROLE_ARN is not configured in repository variables. Image was pushed to GHCR with traceable tags (${{ steps.meta.outputs.image_tag }}, ${{ github.sha }}). Configure AWS_OIDC_ROLE_ARN to enable live AWS ECR push."
+            echo "Keeping image on GHCR (${{ steps.meta.outputs.ghcr_image_uri }}, sha: ${{ github.sha }}). Set AWS_OIDC_ROLE_ARN when ready to mirror to AWS ECR."
           fi
 
-      # ── 3. Authenticate to AWS via OIDC & Login to Amazon ECR (TITANOPS-35) ──
+      # ── 3. Optional AWS ECR Mirror (Only runs if AWS_OIDC_ROLE_ARN is set) ─
+      - name: Log in to the GitHub Container registry
+        if: steps.check-aws.outputs.aws_enabled == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Configure AWS credentials via OIDC
         if: steps.check-aws.outputs.aws_enabled == 'true'
         uses: aws-actions/configure-aws-credentials@v4
@@ -148,7 +138,7 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Tag and Push Docker image to Amazon ECR
+      - name: Pull from GHCR and Push to Amazon ECR
         if: steps.check-aws.outputs.aws_enabled == 'true'
         id: ecr-push
         run: |
@@ -159,21 +149,20 @@ jobs:
           SEMVER_TAG="${{ steps.meta.outputs.image_tag }}"
           SHA_TAG="${{ github.sha }}"
 
+          docker pull "$SOURCE_IMAGE"
+
           ECR_URI_SHA="${REGISTRY}/${ECR_REPO}:${SHA_TAG}"
           ECR_URI_SEMVER="${REGISTRY}/${ECR_REPO}:${SEMVER_TAG}"
 
-          echo "Tagging $SOURCE_IMAGE -> $ECR_URI_SHA"
           docker tag "$SOURCE_IMAGE" "$ECR_URI_SHA"
           docker push "$ECR_URI_SHA"
 
           if [ "$SEMVER_TAG" != "$SHA_TAG" ]; then
-            echo "Tagging $SOURCE_IMAGE -> $ECR_URI_SEMVER"
             docker tag "$SOURCE_IMAGE" "$ECR_URI_SEMVER"
             docker push "$ECR_URI_SEMVER"
           fi
 
           echo "ecr_image_uri=$ECR_URI_SEMVER" >> "$GITHUB_OUTPUT"
-          echo "Successfully pushed traceable tags ($SHA_TAG, $SEMVER_TAG) to $REGISTRY/$ECR_REPO"
 
       # ── 4. Set up Kubernetes & Helm Tooling (TITANOPS-22) ──────────────────
       - name: Set up kubectl

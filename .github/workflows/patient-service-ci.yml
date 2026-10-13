@@ -87,12 +87,6 @@ jobs:
           ghcr.io/${{ github.repository }}/patient-service:latest
         outputs: type=docker,dest=/tmp/patient-service.tar
 
-    - name: Upload Docker image artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: patient-service-docker-image
-        path: /tmp/patient-service.tar
-
     # ── TITANOPS-105: Trivy Container Image Vulnerability Scan ──────────────
     # This step loads the Docker image we just built and scans it for known
     # security vulnerabilities (CVEs) using Trivy before it can be deployed.

@@ -80,11 +80,6 @@ jobs:
           ghcr.io/${{ github.repository }}/lab-service:${{ github.sha }}
           ghcr.io/${{ github.repository }}/lab-service:latest
         outputs: type=docker,dest=/tmp/lab-service.tar
-    - name: Upload Docker image artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: lab-service-docker-image
-        path: /tmp/lab-service.tar
 
     # ── TITANOPS-105: Trivy Container Image Vulnerability Scan ──────────────
     - name: Load Docker image for scanning

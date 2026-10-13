@@ -80,11 +80,6 @@ jobs:
           ghcr.io/${{ github.repository }}/medication-service:${{ github.sha }}
           ghcr.io/${{ github.repository }}/medication-service:latest
         outputs: type=docker,dest=/tmp/medication-service.tar
-    - name: Upload Docker image artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: medication-service-docker-image
-        path: /tmp/medication-service.tar
 
     # ── TITANOPS-105: Trivy Container Image Vulnerability Scan ──────────────
     - name: Load Docker image for scanning
