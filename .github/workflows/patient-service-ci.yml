@@ -28,6 +28,9 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.gitversion.outputs.semVer }}
+      git_sha: ${{ github.sha }}
 
     steps:
     - uses: actions/checkout@v4
@@ -80,6 +83,7 @@ jobs:
         push: ${{ github.ref == 'refs/heads/main' }}
         tags: |
           ghcr.io/${{ github.repository }}/patient-service:${{ steps.gitversion.outputs.semVer }}
+          ghcr.io/${{ github.repository }}/patient-service:${{ github.sha }}
           ghcr.io/${{ github.repository }}/patient-service:latest
         outputs: type=docker,dest=/tmp/patient-service.tar
 
@@ -116,6 +120,8 @@ jobs:
       service_name: patient-service
       context_dir: patient-service
       dockerfile: patient-service/Dockerfile
+      image_tag: ${{ needs.build.outputs.image_tag }}
+      ecr_repository: patient-service
     permissions:
       id-token: write
       contents: read

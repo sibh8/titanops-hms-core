@@ -27,6 +27,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.gitversion.outputs.semVer }}
+      git_sha: ${{ github.sha }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -74,6 +77,7 @@ jobs:
         push: ${{ github.ref == 'refs/heads/main' }}
         tags: |
           ghcr.io/${{ github.repository }}/provider-service:${{ steps.gitversion.outputs.semVer }}
+          ghcr.io/${{ github.repository }}/provider-service:${{ github.sha }}
           ghcr.io/${{ github.repository }}/provider-service:latest
         outputs: type=docker,dest=/tmp/provider-service.tar
     - name: Upload Docker image artifact
@@ -105,6 +109,8 @@ jobs:
       service_name: provider-service
       context_dir: provider-service
       dockerfile: provider-service/Dockerfile
+      image_tag: ${{ needs.build.outputs.image_tag }}
+      ecr_repository: provider-service
     permissions:
       id-token: write
       contents: read
