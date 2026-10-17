@@ -27,6 +27,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.gitversion.outputs.semVer }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -97,14 +99,17 @@ jobs:
         severity: 'CRITICAL,HIGH'
 
 
-  verify-tooling:
+  deploy:
+    name: Deploy to EKS via Helm
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/reusable-ecr-push.yml
     with:
       service_name: medication-service
       context_dir: medication-service
       dockerfile: medication-service/Dockerfile
+      image_tag: ${{ needs.build.outputs.image_tag }}
+      environment: dev
     permissions:
       id-token: write
       contents: read

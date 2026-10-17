@@ -1,61 +1,111 @@
-name: Reusable - Build & Push to GHCR
+name: Reusable - Deploy via Helm
 
 on:
   workflow_call:
     inputs:
       service_name:
-        description: "Service directory name"
+        description: "Service directory / release name"
         required: true
         type: string
       context_dir:
         description: "Docker build context directory"
-        required: true
+        required: false
         type: string
+        default: ""
       dockerfile:
         description: "Path to the Dockerfile"
-        required: true
+        required: false
         type: string
+        default: ""
+      environment:
+        description: "Target deployment environment (e.g. dev, local, staging, prod)"
+        required: false
+        type: string
+        default: "dev"
+      values_file:
+        description: "Explicit path to Helm values file (optional override)"
+        required: false
+        type: string
+        default: ""
+      image_tag:
+        description: "Image tag to deploy (defaults to git SHA or latest)"
+        required: false
+        type: string
+        default: ""
+      release_name:
+        description: "Helm release name (defaults to service_name)"
+        required: false
+        type: string
+        default: ""
+      namespace:
+        description: "Target Kubernetes namespace (defaults to hms)"
+        required: false
+        type: string
+        default: "hms"
+      ecr_repository:
+        description: "ECR repository name (if differing from service_name)"
+        required: false
+        type: string
+        default: ""
+
   workflow_dispatch:
     inputs:
       service_name:
-        description: "Service directory name (e.g. appointment-service)"
+        description: "Service name (e.g. appointment-service, frontend, billing-service)"
         required: true
         default: "appointment-service"
-        type: string
-      context_dir:
-        description: "Docker build context directory"
+        type: choice
+        options:
+          - appointment-service
+          - billing-service
+          - encounter-service
+          - frontend
+          - lab-service
+          - medication-service
+          - patient-service
+          - prescription-service
+          - provider-service
+          - user-service
+      environment:
+        description: "Target deployment environment"
         required: true
-        default: "appointment-service"
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - local
+          - staging
+          - prod
+      image_tag:
+        description: "Image tag to deploy"
+        required: false
+        default: "latest"
         type: string
-      dockerfile:
-        description: "Path to the Dockerfile"
-        required: true
-        default: "appointment-service/Dockerfile"
+      namespace:
+        description: "Kubernetes namespace"
+        required: false
+        default: "hms"
+        type: string
+      values_file:
+        description: "Custom values file path (optional)"
+        required: false
+        default: ""
         type: string
 
 permissions:
   id-token: write
   contents: read
-  packages: write  # Crucial for pushing to GitHub Packages (ghcr.io)
+  packages: write
 
 jobs:
-  build-and-push:
-    name: Build & Push ${{ inputs.service_name }}
+  # ── 1. Tooling Verification Scaffold ──────────────────────────────────────────
+  verify-tooling:
+    name: Verify Cluster & Helm Tooling
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
-
-      # Docker build/push logic has been moved to the parent CI pipelines
-      # This reusable workflow now purely validates Kubernetes/Helm deployment scaffold.
-
-      # 4. (From TITANOPS-22 DoD) Set up kubectl & helm, and AWS auth just to verify tools are present
-      - name: Configure AWS credentials (OIDC scaffold for future)
-        continue-on-error: true # Might fail without vars set, but satisfies DoD presence check
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN || 'arn:aws:iam::111122223333:role/dummy' }}
-          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v4
@@ -67,8 +117,207 @@ jobs:
         with:
           version: 'v3.14.0'
 
-      - name: Verify cluster tooling
+      - name: Verify tooling presence
         run: |
-          echo "kubectl and helm are installed and available to this pipeline:"
+          echo "Verifying kubectl and helm installations:"
           kubectl version --client
           helm version
+
+  # ── 2. Deploy via Helm Upgrade / Install (TITANOPS-51) ───────────────────────
+  deploy:
+    name: Helm Deploy ${{ inputs.service_name }} (${{ inputs.environment || 'dev' }})
+    needs: verify-tooling
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.29.0'
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      # ── Select Environment & Values File (DoD Item 2) ────────────────────────
+      - name: Select environment and values file
+        id: resolve-config
+        run: |
+          set -euo pipefail
+
+          # 1. Target Environment Resolution (Workflow input or Branch mapping)
+          TARGET_ENV="${{ inputs.environment }}"
+          if [ -z "$TARGET_ENV" ]; then
+            case "${{ github.ref_name }}" in
+              main|master)
+                TARGET_ENV="dev"
+                ;;
+              staging*)
+                TARGET_ENV="staging"
+                ;;
+              prod*|production*)
+                TARGET_ENV="prod"
+                ;;
+              *)
+                TARGET_ENV="dev"
+                ;;
+            esac
+          fi
+
+          # 2. Map Service Name to configuration key
+          SVC="${{ inputs.service_name }}"
+          if [ "$SVC" = "medicore-hms-ui" ] || [ "$SVC" = "frontend" ]; then
+            SVC_KEY="frontend"
+          else
+            SVC_KEY="$SVC"
+          fi
+
+          RELEASE_NAME="${{ inputs.release_name }}"
+          if [ -z "$RELEASE_NAME" ]; then
+            RELEASE_NAME="$SVC"
+          fi
+
+          NAMESPACE="${{ inputs.namespace }}"
+          if [ -z "$NAMESPACE" ]; then
+            NAMESPACE="hms"
+          fi
+
+          IMAGE_TAG="${{ inputs.image_tag }}"
+          if [ -z "$IMAGE_TAG" ]; then
+            IMAGE_TAG="${{ github.sha }}"
+          fi
+
+          # 3. Select appropriate values file(s) for the environment
+          EXPLICIT_VAL="${{ inputs.values_file }}"
+          VALUES_ARGS=""
+          SELECTED_VALUES=""
+
+          if [ -n "$EXPLICIT_VAL" ] && [ -f "$EXPLICIT_VAL" ]; then
+            VALUES_ARGS="-f $EXPLICIT_VAL"
+            SELECTED_VALUES="$EXPLICIT_VAL"
+          else
+            BASE_VAL="helm/values/${SVC_KEY}.yaml"
+            ENV_VAL="infra/environments/${TARGET_ENV}/app-config/${SVC_KEY}.yaml"
+            ALT_ENV_VAL="helm/values/${TARGET_ENV}/${SVC_KEY}.yaml"
+
+            if [ -f "$BASE_VAL" ]; then
+              VALUES_ARGS="-f $BASE_VAL"
+              SELECTED_VALUES="$BASE_VAL"
+            fi
+
+            if [ -f "$ENV_VAL" ]; then
+              VALUES_ARGS="$VALUES_ARGS -f $ENV_VAL"
+              SELECTED_VALUES="$SELECTED_VALUES -> $ENV_VAL"
+            elif [ -f "$ALT_ENV_VAL" ]; then
+              VALUES_ARGS="$VALUES_ARGS -f $ALT_ENV_VAL"
+              SELECTED_VALUES="$SELECTED_VALUES -> $ALT_ENV_VAL"
+            fi
+          fi
+
+          echo "=========================================================="
+          echo "Target Environment : $TARGET_ENV"
+          echo "Service Key        : $SVC_KEY"
+          echo "Helm Release Name  : $RELEASE_NAME"
+          echo "Target Namespace   : $NAMESPACE"
+          echo "Image Tag          : $IMAGE_TAG"
+          echo "Selected Values    : $SELECTED_VALUES"
+          echo "Helm Flags         : $VALUES_ARGS"
+          echo "=========================================================="
+
+          echo "target_env=$TARGET_ENV" >> "$GITHUB_OUTPUT"
+          echo "release_name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
+          echo "namespace=$NAMESPACE" >> "$GITHUB_OUTPUT"
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+          echo "values_args=$VALUES_ARGS" >> "$GITHUB_OUTPUT"
+          echo "selected_values=$SELECTED_VALUES" >> "$GITHUB_OUTPUT"
+
+      # ── Helm Lint & Dry-Run Client Validation (DoD Item 1) ───────────────────
+      - name: Validate Helm Chart & Template Manifests
+        run: |
+          set -euo pipefail
+          RELEASE_NAME="${{ steps.resolve-config.outputs.release_name }}"
+          NAMESPACE="${{ steps.resolve-config.outputs.namespace }}"
+          IMAGE_TAG="${{ steps.resolve-config.outputs.image_tag }}"
+          VALUES_ARGS="${{ steps.resolve-config.outputs.values_args }}"
+
+          echo "=== 1. Linting Helm Chart ==="
+          helm lint helm/titanops-base $VALUES_ARGS --set image.tag="$IMAGE_TAG"
+
+          echo "=== 2. Dry-Run Upgrade / Install (Client Validation) ==="
+          helm upgrade --install "$RELEASE_NAME" helm/titanops-base \
+            $VALUES_ARGS \
+            --namespace "$NAMESPACE" \
+            --create-namespace \
+            --set image.tag="$IMAGE_TAG" \
+            --dry-run=client
+
+          echo "=== 3. Rendering Kubernetes Deployment and Service Manifests ==="
+          helm template "$RELEASE_NAME" helm/titanops-base \
+            $VALUES_ARGS \
+            --namespace "$NAMESPACE" \
+            --set image.tag="$IMAGE_TAG" > /tmp/rendered.yaml
+          grep -E "kind: (Deployment|Service)" /tmp/rendered.yaml
+
+      # ── Check AWS EKS Connectivity ──────────────────────────────────────────
+      - name: Check AWS EKS Connectivity
+        id: check-cluster
+        run: |
+          if [ -n "${{ vars.AWS_OIDC_ROLE_ARN }}" ]; then
+            echo "deploy_live=true" >> "$GITHUB_OUTPUT"
+            echo "AWS_OIDC_ROLE_ARN detected. Live deployment to Amazon EKS enabled."
+          else
+            echo "deploy_live=false" >> "$GITHUB_OUTPUT"
+            echo "AWS_OIDC_ROLE_ARN not set. Offline validation and dry-run helm upgrade --install completed successfully."
+          fi
+
+      - name: Configure AWS credentials via OIDC
+        if: steps.check-cluster.outputs.deploy_live == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-south-1' }}
+          audience: sts.amazonaws.com
+
+      - name: Update Kubeconfig for Amazon EKS
+        if: steps.check-cluster.outputs.deploy_live == 'true'
+        run: |
+          CLUSTER_NAME="${{ vars.EKS_CLUSTER_NAME || 'titanops-hms' }}"
+          REGION="${{ vars.AWS_REGION || 'ap-south-1' }}"
+          aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION"
+
+      # ── Live Helm Upgrade / Install (DoD Items 1 & 3) ────────────────────────
+      - name: Deploy Helm Chart to EKS (helm upgrade --install)
+        if: steps.check-cluster.outputs.deploy_live == 'true'
+        run: |
+          set -euo pipefail
+          RELEASE_NAME="${{ steps.resolve-config.outputs.release_name }}"
+          NAMESPACE="${{ steps.resolve-config.outputs.namespace }}"
+          IMAGE_TAG="${{ steps.resolve-config.outputs.image_tag }}"
+          VALUES_ARGS="${{ steps.resolve-config.outputs.values_args }}"
+
+          echo "Running helm upgrade --install for $RELEASE_NAME into namespace $NAMESPACE..."
+          # Running helm upgrade --install ensures that:
+          # - If release does not exist, it installs
+          # - Re-runs of the workflow update the existing release in-place rather than creating duplicates
+          helm upgrade --install "$RELEASE_NAME" helm/titanops-base \
+            $VALUES_ARGS \
+            --namespace "$NAMESPACE" \
+            --create-namespace \
+            --set image.tag="$IMAGE_TAG" \
+            --wait \
+            --timeout 5m
+
+      - name: Verify Rollout Status
+        if: steps.check-cluster.outputs.deploy_live == 'true'
+        run: |
+          set -euo pipefail
+          RELEASE_NAME="${{ steps.resolve-config.outputs.release_name }}"
+          NAMESPACE="${{ steps.resolve-config.outputs.namespace }}"
+
+          echo "Verifying deployment rollout status for $RELEASE_NAME..."
+          kubectl rollout status "deployment/${RELEASE_NAME}" -n "$NAMESPACE" --timeout=180s || \
+          kubectl rollout status "deployment/${RELEASE_NAME}-titanops-base" -n "$NAMESPACE" --timeout=180s
