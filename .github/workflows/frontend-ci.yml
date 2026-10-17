@@ -52,13 +52,6 @@ jobs:
           # Keeps the build environment-agnostic; nginx proxies API calls at runtime
           VITE_API_BASE_URL: ''
 
-      - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend/dist
-          retention-days: 7
-
   # ── 2. Security scan (CodeQL – JavaScript/TypeScript) ────────────────────────
   codeql:
     name: CodeQL Security Scan
@@ -140,13 +133,6 @@ jobs:
           cache-from: type=gha
           cache-to:   type=gha,mode=max
           outputs: type=docker,dest=/tmp/medicore-hms-ui.tar
-
-      - name: Upload Docker image artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: medicore-hms-ui-docker-image
-          path: /tmp/medicore-hms-ui.tar
-          retention-days: 30
 
       # ── TITANOPS-105: Trivy Container Image Vulnerability Scan ──────────────
       - name: Load Docker image for scanning

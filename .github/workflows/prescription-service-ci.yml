@@ -78,11 +78,6 @@ jobs:
           ghcr.io/${{ github.repository }}/prescription-service:${{ steps.gitversion.outputs.semVer }}
           ghcr.io/${{ github.repository }}/prescription-service:latest
         outputs: type=docker,dest=/tmp/prescription-service.tar
-    - name: Upload Docker image artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: prescription-service-docker-image
-        path: /tmp/prescription-service.tar
 
     # ── TITANOPS-105: Trivy Container Image Vulnerability Scan ──────────────
     - name: Load Docker image for scanning

@@ -85,12 +85,6 @@ jobs:
           ghcr.io/${{ github.repository }}/appointment-service:latest
         outputs: type=docker,dest=/tmp/appointment-service.tar
 
-    - name: Upload Docker image artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: appointment-service-docker-image
-        path: /tmp/appointment-service.tar
-
     # ── TITANOPS-105: Trivy Container Image Vulnerability Scan ──────────────
     - name: Load Docker image for scanning
       run: docker load --input /tmp/appointment-service.tar

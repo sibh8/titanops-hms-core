@@ -85,12 +85,6 @@ jobs:
           ghcr.io/${{ github.repository }}/user-service:latest
         outputs: type=docker,dest=/tmp/user-service.tar
 
-    - name: Upload Docker image artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: user-service-docker-image
-        path: /tmp/user-service.tar
-
     # ── TITANOPS-105: Trivy Container Image Vulnerability Scan ──────────────
     - name: Load Docker image for scanning
       run: docker load --input /tmp/user-service.tar

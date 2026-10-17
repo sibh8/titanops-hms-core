@@ -78,11 +78,6 @@ jobs:
           ghcr.io/${{ github.repository }}/billing-service:${{ steps.gitversion.outputs.semVer }}
           ghcr.io/${{ github.repository }}/billing-service:latest
         outputs: type=docker,dest=/tmp/billing-service.tar
-    - name: Upload Docker image artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: billing-service-docker-image
-        path: /tmp/billing-service.tar
 
     # ── TITANOPS-105: Trivy Container Image Vulnerability Scan ──────────────
     - name: Load Docker image for scanning

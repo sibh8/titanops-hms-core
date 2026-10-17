@@ -78,11 +78,6 @@ jobs:
           ghcr.io/${{ github.repository }}/encounter-service:${{ steps.gitversion.outputs.semVer }}
           ghcr.io/${{ github.repository }}/encounter-service:latest
         outputs: type=docker,dest=/tmp/encounter-service.tar
-    - name: Upload Docker image artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: encounter-service-docker-image
-        path: /tmp/encounter-service.tar
 
     # ── TITANOPS-105: Trivy Container Image Vulnerability Scan ──────────────
     - name: Load Docker image for scanning
