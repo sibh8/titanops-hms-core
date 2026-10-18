@@ -43,7 +43,7 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
+      uses: github/codeql-action/init@v4
       with:
         languages: java
 
@@ -54,9 +54,37 @@ jobs:
       run: ./mvnw -B package --file pom.xml
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
+      uses: github/codeql-action/analyze@v4
       with:
         upload: false
+
+    # ── TITANOPS-112: Dependency / SCA Vulnerability Scanning ────────────────
+    - name: Run Dependency / SCA Vulnerability Scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: 'user-service'
+        format: 'table'
+        exit-code: '0'
+        vuln-type: 'library'
+        severity: 'CRITICAL,HIGH'
+        output: 'trivy-sca-results.txt'
+
+    - name: Surface High/Critical Dependency Findings in PR Summary
+      if: always()
+      run: |
+        echo "### 🔍 Dependency / SCA Vulnerability Scan Results" >> $GITHUB_STEP_SUMMARY
+        echo "**Target:** \`user-service\` | **Severity:** CRITICAL, HIGH" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ -f trivy-sca-results.txt ] && [ -s trivy-sca-results.txt ]; then
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat trivy-sca-results.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ No High or Critical dependency vulnerabilities detected." >> $GITHUB_STEP_SUMMARY
+        fi
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "> ℹ️ **Legacy Stack Notice:** Spring Boot 2.5.14 reached End-of-Life (EOL). For remediation, see [Spring Boot Upgrade Path](docs/SPRING-BOOT-UPGRADE-PATH.md)." >> $GITHUB_STEP_SUMMARY
 
     - name: Set up GitVersion
       uses: gittools/actions/gitversion/setup@v0.9.15
@@ -76,7 +104,7 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
     - name: Build and push Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v7
       with:
         context: user-service
         file: user-service/Dockerfile
