@@ -40,7 +40,7 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
+      uses: github/codeql-action/init@v3
       with:
         languages: java
     - name: Make Maven wrapper executable
@@ -49,7 +49,7 @@ jobs:
     - name: Build with Maven
       run: ./mvnw -B package --file pom.xml
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
+      uses: github/codeql-action/analyze@v3
       with:
         upload: false
     - name: Set up GitVersion
@@ -78,11 +78,6 @@ jobs:
           ghcr.io/${{ github.repository }}/medication-service:${{ steps.gitversion.outputs.semVer }}
           ghcr.io/${{ github.repository }}/medication-service:latest
         outputs: type=docker,dest=/tmp/medication-service.tar
-    - name: Upload Docker image artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: medication-service-docker-image
-        path: /tmp/medication-service.tar
 
     # ── TITANOPS-105: Trivy Container Image Vulnerability Scan ──────────────
     - name: Load Docker image for scanning

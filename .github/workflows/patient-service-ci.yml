@@ -42,7 +42,7 @@ jobs:
         distribution: 'temurin'
         cache: maven
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
+      uses: github/codeql-action/init@v3
       with:
         languages: java
 
@@ -53,7 +53,7 @@ jobs:
       run: ./mvnw -B package --file pom.xml
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
+      uses: github/codeql-action/analyze@v3
       with:
         upload: false
 
@@ -84,12 +84,6 @@ jobs:
           ghcr.io/${{ github.repository }}/patient-service:${{ steps.gitversion.outputs.semVer }}
           ghcr.io/${{ github.repository }}/patient-service:latest
         outputs: type=docker,dest=/tmp/patient-service.tar
-
-    - name: Upload Docker image artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: patient-service-docker-image
-        path: /tmp/patient-service.tar
 
     # ── TITANOPS-105: Trivy Container Image Vulnerability Scan ──────────────
     # This step loads the Docker image we just built and scans it for known
