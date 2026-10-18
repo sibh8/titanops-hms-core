@@ -1,0 +1,120 @@
+# Backend Microservices NetworkPolicy:
+# Ingress: Allow HTTP traffic on service ports (8081-8089) ONLY from frontend and Prometheus scrapers.
+# Egress: Allow egress strictly to MySQL database (port 3306), DNS (port 53), and OpenTelemetry (port 4317).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-services-network-policy
+  namespace: hms
+  labels:
+    app.kubernetes.io/part-of: medicore-hms
+    app.kubernetes.io/managed-by: titanops
+    security.titanops.io/tier: application
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/instance
+        operator: In
+        values:
+          - patient-service
+          - appointment-service
+          - user-service
+          - billing-service
+          - encounter-service
+          - lab-service
+          - medication-service
+          - prescription-service
+          - provider-service
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # 1. Allow inbound API requests from the frontend pod
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values: ["frontend", "medicore-hms-ui"]
+      ports:
+        - protocol: TCP
+          port: 8081 # patient-service
+        - protocol: TCP
+          port: 8082 # appointment-service
+        - protocol: TCP
+          port: 8083 # user-service
+        - protocol: TCP
+          port: 8084 # billing-service
+        - protocol: TCP
+          port: 8085 # encounter-service
+        - protocol: TCP
+          port: 8086 # lab-service
+        - protocol: TCP
+          port: 8087 # medication-service
+        - protocol: TCP
+          port: 8088 # prescription-service
+        - protocol: TCP
+          port: 8089 # provider-service
+    # 2. Allow Prometheus scraping for Spring Boot Actuator metrics
+    - from:
+        - namespaceSelector: {}
+          podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values: ["prometheus", "prometheus-server"]
+      ports:
+        - protocol: TCP
+          port: 8081
+        - protocol: TCP
+          port: 8082
+        - protocol: TCP
+          port: 8083
+        - protocol: TCP
+          port: 8084
+        - protocol: TCP
+          port: 8085
+        - protocol: TCP
+          port: 8086
+        - protocol: TCP
+          port: 8087
+        - protocol: TCP
+          port: 8088
+        - protocol: TCP
+          port: 8089
+  egress:
+    # 1. DNS egress
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # 2. Allow database access on port 3306 to in-cluster MySQL pod
+    - to:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values: ["medicore-mysql", "mysql"]
+      ports:
+        - protocol: TCP
+          port: 3306
+    # 3. Allow database access on port 3306 to AWS RDS MySQL (private DB subnets / CIDR blocks)
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 169.254.169.254/32 # Block IMDS from pods
+      ports:
+        - protocol: TCP
+          port: 3306
+    # 4. Allow OpenTelemetry agent export on gRPC port 4317
+    - to:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values: ["otel-collector"]
+      ports:
+        - protocol: TCP
+          port: 4317

@@ -1,0 +1,49 @@
+# Database NetworkPolicy:
+# Ingress: Allow MySQL traffic on port 3306 ONLY from authorized backend microservices.
+# CRITICAL: Frontend pod and any unauthorized pods are strictly prohibited from connecting to MySQL.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: database-network-policy
+  namespace: hms
+  labels:
+    app.kubernetes.io/name: database
+    app.kubernetes.io/part-of: medicore-hms
+    app.kubernetes.io/managed-by: titanops
+    security.titanops.io/tier: data
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/instance
+        operator: In
+        values: ["medicore-mysql", "mysql"]
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow MySQL port 3306 ONLY from the 9 backend microservices
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                  - patient-service
+                  - appointment-service
+                  - user-service
+                  - billing-service
+                  - encounter-service
+                  - lab-service
+                  - medication-service
+                  - prescription-service
+                  - provider-service
+      ports:
+        - protocol: TCP
+          port: 3306
+  egress:
+    # Database does not need external egress; permit only DNS if needed for cluster resolution
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
