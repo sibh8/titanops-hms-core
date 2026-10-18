@@ -1,0 +1,41 @@
+name: Terraform CI & Remote State Validation
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/terraform-ci.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/terraform-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-terraform:
+    name: Validate Terraform & Remote State
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Run Remote State Verification Suite (TITANOPS-29)
+        run: |
+          chmod +x infra/test/verify-remote-state.sh
+          ./infra/test/verify-remote-state.sh
+
+      - name: Run Core Infrastructure Validation Suite
+        run: |
+          chmod +x infra/test/validate.sh
+          ./infra/test/validate.sh

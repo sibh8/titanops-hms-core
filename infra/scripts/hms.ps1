@@ -56,8 +56,11 @@ Write-Host "==> Stack       : $StackDir" -ForegroundColor Cyan
 $chdir = "-chdir=$StackDir"
 $tfVar = "-var", "env=$Environment"
 
+$backendHcl = Join-Path $EnvDir 'backend.hcl'
+$backendArgs = if (Test-Path $backendHcl) { @("-backend-config=$backendHcl") } else { @() }
+
 switch ($Action) {
-  'init' { $cmd = @($chdir, 'init') + $Extra }
+  'init' { $cmd = @($chdir, 'init') + $backendArgs + $Extra }
   'fmt' { $cmd = @($chdir, 'fmt', '-recursive') + $Extra }
   'validate' { $cmd = @($chdir, 'validate') + $Extra }
   'console' { $cmd = @($chdir, 'console') + $tfVar + $Extra }
@@ -70,7 +73,7 @@ switch ($Action) {
 # Auto-init if the working dir isn't initialized yet (for non-init actions).
 if ($Action -ne 'init' -and -not (Test-Path (Join-Path $StackDir '.terraform'))) {
   Write-Host "==> .terraform missing - running init first" -ForegroundColor Yellow
-  terraform $chdir init
+  terraform $chdir init @backendArgs
 }
 
 Write-Host "==> terraform $($cmd -join ' ')" -ForegroundColor Green
