@@ -95,6 +95,8 @@ jobs:
     name: Docker Build & Export
     runs-on: ubuntu-latest
     needs: build
+    outputs:
+      image_tag: ${{ steps.gitversion.outputs.semVer }}
 
     steps:
       - uses: actions/checkout@v4
@@ -161,14 +163,17 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
 
-  verify-tooling:
+  pipeline:
+    name: Infrastructure, Configuration, Deploy & Monitoring Pipeline
     needs: docker
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/reusable-ecr-push.yml
     with:
       service_name: medicore-hms-ui
       context_dir: frontend
       dockerfile: frontend/Dockerfile
+      image_tag: ${{ needs.docker.outputs.image_tag }}
+      environment: dev
     permissions:
       id-token: write
       contents: read
