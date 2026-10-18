@@ -52,7 +52,7 @@ jobs:
       # 4. (From TITANOPS-22 DoD) Set up kubectl & helm, and AWS auth just to verify tools are present
       - name: Configure AWS credentials (OIDC scaffold for future)
         continue-on-error: true # Might fail without vars set, but satisfies DoD presence check
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN || 'arn:aws:iam::111122223333:role/dummy' }}
           aws-region: ${{ vars.AWS_REGION || 'ap-south-1' }}
