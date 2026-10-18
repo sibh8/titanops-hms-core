@@ -53,7 +53,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/x
 <dependency>
 <groupId>io.opentelemetry.instrumentation</groupId>
 <artifactId>opentelemetry-instrumentation-annotations</artifactId>
-<version>1.33.6</version>
+<version>2.32.0</version>
 </dependency>
 <!-- BCrypt password hashing (no full Spring Security setup required) -->
 <dependency>
