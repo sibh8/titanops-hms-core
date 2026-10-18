@@ -81,6 +81,25 @@ module "iam_oidc" {
   tags             = local.tags
 }
 
+# Grant GitHub Actions OIDC role access to the EKS cluster (for kubectl/helm deploy & verification)
+resource "aws_eks_access_entry" "gha" {
+  count         = local.is_aws ? 1 : 0
+  cluster_name  = module.eks[0].cluster_name
+  principal_arn = module.iam_oidc[0].role_arn
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "gha" {
+  count         = local.is_aws ? 1 : 0
+  cluster_name  = module.eks[0].cluster_name
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  principal_arn = module.iam_oidc[0].role_arn
+
+  access_scope {
+    type = "cluster"
+  }
+}
+
 # ---------- Optional, count-gated features (AWS only) ----------
 module "cloudwatch" {
   count  = local.is_aws && local.features.cloudwatch ? 1 : 0

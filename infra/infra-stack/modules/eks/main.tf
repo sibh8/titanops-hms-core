@@ -35,6 +35,11 @@ resource "aws_eks_cluster" "this" {
   # CIS EKS 2.x: control plane logging
   enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
 
+  access_config {
+    authentication_mode                         = "API_AND_CONFIG_MAP"
+    bootstrap_cluster_creator_admin_permissions = true
+  }
+
   dynamic "encryption_config" {
     for_each = var.kms_key_arn == null ? [] : [1]
     content {

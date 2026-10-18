@@ -46,14 +46,19 @@ echo "==> Stack       : $STACK_DIR"
 CHDIR="-chdir=$STACK_DIR"
 TFVAR=(-var "env=$ENVIRONMENT")
 
+BACKEND_CONFIG=()
+if [[ -f "$ENV_DIR/backend.hcl" ]]; then
+  BACKEND_CONFIG=(-backend-config="$ENV_DIR/backend.hcl")
+fi
+
 # Auto-init if not initialized yet (for non-init actions).
 if [[ "$ACTION" != "init" && ! -d "$STACK_DIR/.terraform" ]]; then
   echo "==> .terraform missing - running init first"
-  terraform "$CHDIR" init
+  terraform "$CHDIR" init "${BACKEND_CONFIG[@]}"
 fi
 
 case "$ACTION" in
-  init)     terraform "$CHDIR" init "${EXTRA[@]}" ;;
+  init)     terraform "$CHDIR" init "${BACKEND_CONFIG[@]}" "${EXTRA[@]}" ;;
   fmt)      terraform "$CHDIR" fmt -recursive "${EXTRA[@]}" ;;
   validate) terraform "$CHDIR" validate "${EXTRA[@]}" ;;
   output)   terraform "$CHDIR" output "${EXTRA[@]}" ;;

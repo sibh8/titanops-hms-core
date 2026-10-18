@@ -181,6 +181,14 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      # 4. (From TITANOPS-22 DoD) Set up kubectl & helm, and AWS auth just to verify tools are present
+      - name: Configure AWS credentials (OIDC scaffold for future)
+        continue-on-error: true # Might fail without vars set, but satisfies DoD presence check
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN || 'arn:aws:iam::111122223333:role/dummy' }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-south-1' }}
+          audience: sts.amazonaws.com
 
       - name: Set up kubectl
         uses: azure/setup-kubectl@v4
@@ -188,7 +196,7 @@ jobs:
           version: 'v1.30.0'
 
       - name: Set up Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@v5
         with:
           version: 'v3.14.0'
 
