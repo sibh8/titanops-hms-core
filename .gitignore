@@ -34,3 +34,19 @@ package-lock.json
 
 # Extra Files
 *.xlsx
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Helm packaged archives & distribution
+dist/
+*.tgz
+*.tgz.sha256
