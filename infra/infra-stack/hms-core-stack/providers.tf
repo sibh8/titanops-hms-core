@@ -1,6 +1,9 @@
 # AWS provider only meaningful for target=aws; harmless otherwise.
 provider "aws" {
-  region = try(local.aws_cfg.region, "ap-south-1")
+  region                      = try(local.aws_cfg.region, "ap-south-1")
+  skip_credentials_validation = local.is_local
+  skip_requesting_account_id  = local.is_local
+  skip_metadata_api_check     = local.is_local
   default_tags {
     tags = local.tags
   }
