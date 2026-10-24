@@ -1,0 +1,44 @@
+.sandbox.env
+
+# Java / Maven
+**/target/
+**/*.class
+**/*.jar
+**/*.war
+**/*.ear
+**/*.log
+**/hs_err_pid*
+**/replay_pid*
+
+# IDE / editor
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.factorypath
+
+# Build and test output
+surefire-reports/
+failsafe-reports/
+test-output/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node / Frontend
+node_modules/
+dist/
+package-lock.json
+
+# Extra Files
+*.xlsx
+
+# Terraform generated files
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
