@@ -34,3 +34,13 @@ package-lock.json
 
 # Extra Files
 *.xlsx
+
+# Terraform local files
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+terraform.rc
+.terraformrc

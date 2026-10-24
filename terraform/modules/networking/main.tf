@@ -131,22 +131,14 @@ resource "aws_route_table_association" "private" {
   route_table_id = aws_route_table.private[count.index].id
 }
 
-# Security group for bastion / administrative EC2
+# Security group for the private SSM-managed administrative EC2
 resource "aws_security_group" "bastion" {
   name        = "${var.project_name}-bastion-sg"
-  description = "Restrict SSH to trusted administrator CIDR"
+  description = "Allow outbound connections for Systems Manager; no inbound access"
   vpc_id      = aws_vpc.main.id
 
-  ingress {
-    description = "SSH from trusted administrator only"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.admin_cidr]
-  }
-
   egress {
-    description = "Outbound connectivity"
+    description = "Systems Manager and administrative outbound connectivity"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
@@ -170,6 +162,14 @@ resource "aws_security_group" "eks_cluster" {
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = [var.admin_cidr]
+  }
+
+  ingress {
+    description     = "Kubernetes API from the private SSM admin instance"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
   }
 
   egress {
