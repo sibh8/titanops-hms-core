@@ -40,3 +40,8 @@ package-lock.json
 *.tfstate
 *.tfstate.*
 *.tfplan
+
+# Ansible local inventory and secrets
+ansible/inventory/hosts.ini
+*.pem
+*.key
