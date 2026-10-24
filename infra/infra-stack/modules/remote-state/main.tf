@@ -89,21 +89,161 @@ resource "aws_s3_bucket_policy" "enforce_tls" {
   })
 }
 
-# Lifecycle management for noncurrent state versions (cost optimization)
+# ------------------------------------------------------------------------------
+# Lifecycle management for remote state versions (cost optimization)
+# DoD #3: S3 lifecycle rules configured for state bucket to expire/transition old versions
+# ------------------------------------------------------------------------------
 resource "aws_s3_bucket_lifecycle_configuration" "tfstate" {
   bucket = aws_s3_bucket.tfstate.id
 
   rule {
-    id     = "expire-noncurrent-state-versions"
+    id     = "cost-optimization-state-versions"
     status = "Enabled"
 
     filter {}
 
+    noncurrent_version_transition {
+      noncurrent_days = var.transition_ia_days
+      storage_class   = "STANDARD_IA"
+    }
+
+    noncurrent_version_transition {
+      noncurrent_days = var.transition_glacier_days
+      storage_class   = "GLACIER"
+    }
+
     noncurrent_version_expiration {
       noncurrent_days = var.noncurrent_version_retention_days
     }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+
+    expired_object_delete_marker = true
   }
 }
+
+# ------------------------------------------------------------------------------
+# S3 Access and Audit Logging Bucket with Cost-Optimized Lifecycle
+# DoD #3: S3 lifecycle rules configured for log buckets to expire old versions/objects
+# ------------------------------------------------------------------------------
+resource "aws_s3_bucket" "logs" {
+  count  = var.enable_logging_bucket ? 1 : 0
+  bucket = "${local.bucket_name}-logs"
+
+  tags = merge(
+    var.tags,
+    {
+      Name        = "${local.bucket_name}-logs"
+      Purpose     = "AuditAndAccessLogs"
+      Description = "Encrypted access and audit log bucket with automated lifecycle expiration"
+    }
+  )
+}
+
+resource "aws_s3_bucket_versioning" "logs" {
+  count  = var.enable_logging_bucket ? 1 : 0
+  bucket = aws_s3_bucket.logs[0].id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "logs" {
+  count  = var.enable_logging_bucket ? 1 : 0
+  bucket = aws_s3_bucket.logs[0].id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = var.kms_key_arn == null ? "AES256" : "aws:kms"
+      kms_master_key_id = var.kms_key_arn
+    }
+    bucket_key_enabled = var.kms_key_arn != null
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "logs" {
+  count  = var.enable_logging_bucket ? 1 : 0
+  bucket = aws_s3_bucket.logs[0].id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_policy" "logs_enforce_tls" {
+  count      = var.enable_logging_bucket ? 1 : 0
+  bucket     = aws_s3_bucket.logs[0].id
+  depends_on = [aws_s3_bucket_public_access_block.logs]
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "EnforceTLSRequestsOnly"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:*"
+        Resource = [
+          aws_s3_bucket.logs[0].arn,
+          "${aws_s3_bucket.logs[0].arn}/*"
+        ]
+        Condition = {
+          Bool = {
+            "aws:SecureTransport" = "false"
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "logs" {
+  count  = var.enable_logging_bucket ? 1 : 0
+  bucket = aws_s3_bucket.logs[0].id
+
+  rule {
+    id     = "cost-optimization-logs-lifecycle"
+    status = "Enabled"
+
+    filter {}
+
+    transition {
+      days          = var.transition_ia_days
+      storage_class = "STANDARD_IA"
+    }
+
+    transition {
+      days          = var.transition_glacier_days + 30
+      storage_class = "GLACIER"
+    }
+
+    expiration {
+      days = var.log_retention_days
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
+
+    expired_object_delete_marker = true
+  }
+}
+
+resource "aws_s3_bucket_logging" "tfstate" {
+  count         = var.enable_logging_bucket ? 1 : 0
+  bucket        = aws_s3_bucket.tfstate.id
+  target_bucket = aws_s3_bucket.logs[0].id
+  target_prefix = "tfstate-access-logs/"
+}
+
 
 # ------------------------------------------------------------------------------
 # 2. DynamoDB Table for Distributed State Locking
