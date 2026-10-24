@@ -34,3 +34,9 @@ package-lock.json
 
 # Extra Files
 *.xlsx
+
+# Terraform generated files
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
