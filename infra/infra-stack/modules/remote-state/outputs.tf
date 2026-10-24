@@ -23,6 +23,16 @@ output "region" {
   value       = var.region
 }
 
+output "logs_bucket_id" {
+  description = "Name of the S3 bucket created for access and audit logs"
+  value       = var.enable_logging_bucket ? aws_s3_bucket.logs[0].id : null
+}
+
+output "logs_bucket_arn" {
+  description = "ARN of the S3 bucket created for access and audit logs"
+  value       = var.enable_logging_bucket ? aws_s3_bucket.logs[0].arn : null
+}
+
 output "backend_config_hcl" {
   description = "Formatted HCL block for Terraform backend configuration in versions.tf"
   value       = <<-EOT
