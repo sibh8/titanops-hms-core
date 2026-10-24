@@ -9,13 +9,13 @@ terraform {
     null       = { source = "hashicorp/null", version = "~> 3.2" }
   }
 
-  # CIS: remote state in encrypted, versioned, locked S3. Fill in via -backend-config
-  # or uncomment and set values. Local backend is used if this block is removed.
-  # backend "s3" {
-  #   bucket         = "titanops-hms-tfstate"
-  #   key            = "hms-core/terraform.tfstate"
-  #   region         = "ap-south-1"
-  #   dynamodb_table = "titanops-hms-tflock"
-  #   encrypt        = true
-  # }
+  # CIS / TITANOPS-29: remote state in encrypted, versioned, locked S3 with DynamoDB locking.
+  backend "s3" {
+    bucket         = "titanops-hms-tfstate"
+    key            = "hms-core/terraform.tfstate"
+    region         = "ap-south-1"
+    dynamodb_table = "titanops-hms-tflock"
+    encrypt        = true
+  }
 }
+

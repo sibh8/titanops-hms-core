@@ -1,0 +1,119 @@
+name: Terraform CI - Repeatable Provisioning & Idempotency (TITANOPS-28)
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/terraform-ci.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'infra/**'
+      - '.github/workflows/terraform-ci.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target Environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - local
+      check_idempotency:
+        description: 'Enforce strict two-pass idempotency assertion'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate-and-lint:
+    name: Lint, Syntax & Module Resolution
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Terraform Format Check
+        run: |
+          terraform -chdir="infra" fmt -check -recursive
+
+      - name: Run Remote State S3 & DynamoDB Verification Suite (TITANOPS-29)
+        run: |
+          chmod +x infra/test/verify-remote-state.sh
+          ./infra/test/verify-remote-state.sh
+
+      - name: Run Core Infrastructure Multi-Environment Validation Suite
+        run: |
+          chmod +x infra/test/validate.sh
+          ./infra/test/validate.sh
+
+  test-workflow-idempotency:
+    name: Idempotency & Repeatable Rebuild (TITANOPS-28)
+    needs: validate-and-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Run Workflow Idempotency & Repeatability Suite
+        run: |
+          chmod +x infra/test/test-workflow-idempotency.sh
+          ./infra/test/test-workflow-idempotency.sh
+
+  speculative-plan-and-drift:
+    name: Speculative Plan & Drift Detection
+    needs: test-workflow-idempotency
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - name: Configure AWS credentials via OIDC
+        continue-on-error: true # Graceful fallback for offline CI sandboxes
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN || 'arn:aws:iam::111122223333:role/dummy' }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-south-1' }}
+          audience: sts.amazonaws.com
+
+      - name: Terraform Speculative Plan
+        run: |
+          ENV="${{ inputs.environment || 'dev' }}"
+          STACK_DIR="infra/infra-stack/hms-core-stack"
+
+          if [[ -f "infra/environments/$ENV/backend.hcl" && -n "${{ vars.AWS_REGION }}" ]]; then
+            echo "Initializing remote backend with environments/$ENV/backend.hcl..."
+            terraform -chdir="$STACK_DIR" init -backend-config="../../environments/$ENV/backend.hcl"
+            
+            echo "Generating speculative plan for environment '$ENV'..."
+            terraform -chdir="$STACK_DIR" plan -var "env=$ENV" -no-color
+          else
+            echo "Running local offline plan validation (clean backend)..."
+            printf 'terraform {\n  backend "local" {}\n}\n' > "$STACK_DIR/backend_override.tf"
+            terraform -chdir="$STACK_DIR" init -reconfigure -no-color
+            terraform -chdir="$STACK_DIR" validate -no-color
+            rm -f "$STACK_DIR/backend_override.tf"
+            echo "Offline plan validation passed."
+          fi

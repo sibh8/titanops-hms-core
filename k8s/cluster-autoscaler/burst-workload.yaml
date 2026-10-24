@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spot-burst-workload
+  namespace: default
+  labels:
+    app: spot-burst-workload
+    tier: cost-optimized
+    purpose: autoscaling-verification
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: spot-burst-workload
+  template:
+    metadata:
+      labels:
+        app: spot-burst-workload
+    spec:
+      # Target Spot node group via nodeSelector
+      nodeSelector:
+        capacity: spot
+        node.kubernetes.io/lifecycle: spot
+        workload: stateless
+      tolerations:
+        - key: "spot"
+          operator: "Equal"
+          value: "true"
+          effect: "NoSchedule"
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.9
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
