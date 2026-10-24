@@ -1,0 +1,99 @@
+name: Helm - Lifecycle Validation (Install, Upgrade, Rollback) (TITANOPS-53)
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'helm/**'
+      - '.github/workflows/helm-lifecycle-ci.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'helm/**'
+      - '.github/workflows/helm-lifecycle-ci.yml'
+  workflow_dispatch:
+    inputs:
+      service:
+        description: 'Microservice to test'
+        required: true
+        default: 'patient-service'
+        type: choice
+        options:
+          - patient-service
+          - appointment-service
+          - billing-service
+          - encounter-service
+          - frontend
+          - lab-service
+          - medication-service
+          - prescription-service
+          - provider-service
+          - user-service
+      namespace:
+        description: 'Target Kubernetes namespace'
+        required: true
+        default: 'hms-lifecycle-test'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  validate-helm-lifecycle:
+    name: Verify Helm Lifecycle (DoD #1, #2, #3)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5
+        with:
+          version: 'v3.14.0'
+
+      - name: Run Helm Lifecycle Verification Suite
+        run: |
+          chmod +x helm/verify-helm-lifecycle.sh helm/test-helm-lifecycle.sh
+          ./helm/verify-helm-lifecycle.sh
+
+  eks-live-lifecycle-test:
+    name: Live EKS Lifecycle Test
+    needs: validate-helm-lifecycle
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5
+        with:
+          version: 'v3.14.0'
+
+      - name: Configure AWS credentials via OIDC
+        continue-on-error: true # Graceful fallback for offline CI sandboxes
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN || 'arn:aws:iam::111122223333:role/dummy' }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-south-1' }}
+          audience: sts.amazonaws.com
+
+      - name: Test Release Lifecycle on EKS
+        run: |
+          chmod +x helm/test-helm-lifecycle.sh
+          SERVICE="${{ inputs.service || 'patient-service' }}"
+          NS="${{ inputs.namespace || 'hms-lifecycle-ci' }}"
+
+          if command -v aws >/dev/null 2>&1 && [[ -n "${{ vars.AWS_REGION }}" ]]; then
+            echo "Attempting to update kubeconfig for EKS cluster titanops-hms..."
+            aws eks update-kubeconfig --region "${{ vars.AWS_REGION || 'ap-south-1' }}" --name "titanops-hms" 2>/dev/null || true
+          fi
+
+          ./helm/test-helm-lifecycle.sh \
+            --service "$SERVICE" \
+            --namespace "$NS" \
+            --initial-tag "1.0.0" \
+            --upgrade-tag "2.0.0" \
+            --initial-replicas 1 \
+            --upgrade-replicas 3 \
+            --cleanup

@@ -35,6 +35,16 @@ output "gha_oidc_role_arn" {
   value = local.is_aws ? module.iam_oidc[0].role_arn : null
 }
 
+output "spot_node_group_arn" {
+  description = "ARN of the Spot EKS node group for stateless cost optimization"
+  value       = local.is_aws ? module.eks[0].spot_node_group_arn : null
+}
+
+output "cluster_autoscaler_role_arn" {
+  description = "IAM Role ARN for EKS Cluster Autoscaler (IRSA)"
+  value       = local.is_aws ? module.eks[0].cluster_autoscaler_role_arn : null
+}
+
 output "enabled_features" {
   value = { for k, v in local.features : k => v if v }
 }

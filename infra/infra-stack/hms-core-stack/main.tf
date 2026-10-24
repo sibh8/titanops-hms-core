@@ -51,7 +51,16 @@ module "eks" {
   node_desired           = try(local.aws_cfg.node_desired, 2)
   node_min               = try(local.aws_cfg.node_min, 2)
   node_max               = try(local.aws_cfg.node_max, 4)
-  tags                   = local.tags
+
+  # Cost Optimization: Spot node groups and Cluster Autoscaler (TITANOPS-123)
+  enable_spot_node_group    = try(local.aws_cfg.enable_spot_node_group, true)
+  spot_instance_types       = try(local.aws_cfg.spot_instance_types, ["t3.large", "t3a.large", "m5.large", "m5a.large"])
+  spot_desired              = try(local.aws_cfg.spot_desired, 2)
+  spot_min                  = try(local.aws_cfg.spot_min, 1)
+  spot_max                  = try(local.aws_cfg.spot_max, 8)
+  enable_cluster_autoscaler = try(local.aws_cfg.enable_cluster_autoscaler, true)
+
+  tags = local.tags
 }
 
 module "rds" {
