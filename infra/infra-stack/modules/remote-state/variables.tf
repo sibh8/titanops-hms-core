@@ -46,6 +46,30 @@ variable "noncurrent_version_retention_days" {
   default     = 90
 }
 
+variable "transition_ia_days" {
+  description = "Number of days before transitioning objects or noncurrent versions to STANDARD_IA (cost savings)"
+  type        = number
+  default     = 30
+}
+
+variable "transition_glacier_days" {
+  description = "Number of days before transitioning objects or noncurrent versions to GLACIER (deep cost savings)"
+  type        = number
+  default     = 60
+}
+
+variable "enable_logging_bucket" {
+  description = "Enable dedicated S3 access and audit logging bucket with automated lifecycle transitions and expiration"
+  type        = bool
+  default     = true
+}
+
+variable "log_retention_days" {
+  description = "Number of days before expiring S3 server access logs to bound storage costs"
+  type        = number
+  default     = 365
+}
+
 variable "tags" {
   description = "Resource tags"
   type        = map(string)

@@ -31,6 +31,17 @@ aws:
   node_desired: 2
   node_min: 2
   node_max: 4
+  enable_spot_node_group: true
+  spot_instance_types:
+    - t3.large
+    - t3a.large
+    - m5.large
+    - m5a.large
+  spot_desired: 2
+  spot_min: 1
+  spot_max: 8
+  enable_cluster_autoscaler: true
+
 
 database:
   name: medicore_hms

@@ -22,3 +22,14 @@ output "backend_config_hcl" {
   description = "HCL snippet to insert into versions.tf"
   value       = module.remote_state.backend_config_hcl
 }
+
+output "logs_bucket_id" {
+  description = "Name of the S3 bucket created for access and audit logs"
+  value       = module.remote_state.logs_bucket_id
+}
+
+output "logs_bucket_arn" {
+  description = "ARN of the S3 bucket created for access and audit logs"
+  value       = module.remote_state.logs_bucket_arn
+}
+

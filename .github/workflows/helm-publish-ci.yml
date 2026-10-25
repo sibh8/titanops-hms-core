@@ -1,0 +1,128 @@
+name: Helm - Package & Publish Chart (TITANOPS-52)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'helm/**'
+      - '.github/workflows/helm-publish-ci.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'helm/**'
+      - '.github/workflows/helm-publish-ci.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Semantic version for chart package (e.g. 0.1.0, 1.0.0)'
+        required: false
+        default: ''
+      app_version:
+        description: 'Application version override'
+        required: false
+        default: ''
+      target:
+        description: 'Publish target repository'
+        required: true
+        default: 'oci'
+        type: choice
+        options:
+          - oci
+          - s3
+          - local
+
+permissions:
+  id-token: write
+  contents: read
+  packages: write
+
+jobs:
+  validate-and-package:
+    name: Validate & Verify Packaging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5
+        with:
+          version: 'v3.14.0'
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Helm Packaging & Distribution Verification Suite
+        run: |
+          chmod +x helm/verify-packaging.sh helm/publish-chart.sh helm/test-oci-registry.py
+          ./helm/verify-packaging.sh
+
+      - name: Upload Packaged Chart Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: packaged-helm-charts
+          path: |
+            dist/helm/*.tgz
+            dist/helm/*.sha256
+          if-no-files-found: ignore
+
+  publish-to-repository:
+    name: Publish to Repository (AWS ECR / S3)
+    needs: validate-and-package
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v5
+        with:
+          version: 'v3.14.0'
+
+      - name: Configure AWS credentials via OIDC
+        continue-on-error: true # Allows non-AWS or sandbox environments to complete pipeline
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN || 'arn:aws:iam::111122223333:role/dummy' }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-south-1' }}
+          audience: sts.amazonaws.com
+
+      - name: Publish Chart to Target Repository
+        run: |
+          chmod +x helm/publish-chart.sh
+          
+          TARGET="${{ inputs.target || 'oci' }}"
+          VERSION_ARG=""
+          if [[ -n "${{ inputs.version }}" ]]; then
+            VERSION_ARG="--version ${{ inputs.version }}"
+          fi
+
+          APP_VERSION_ARG=""
+          if [[ -n "${{ inputs.app_version }}" ]]; then
+            APP_VERSION_ARG="--app-version ${{ inputs.app_version }}"
+          fi
+
+          if [[ "$TARGET" == "oci" && -n "${{ vars.AWS_ACCOUNT_ID }}" ]]; then
+            REGISTRY="${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION || 'ap-south-1' }}.amazonaws.com"
+            ./helm/publish-chart.sh \
+              --target oci \
+              --registry "$REGISTRY" \
+              --repo "titanops-base" \
+              --region "${{ vars.AWS_REGION || 'ap-south-1' }}" \
+              $VERSION_ARG $APP_VERSION_ARG \
+              --verify
+          elif [[ "$TARGET" == "s3" && -n "${{ vars.HELM_S3_BUCKET }}" ]]; then
+            ./helm/publish-chart.sh \
+              --target s3 \
+              --registry "s3://${{ vars.HELM_S3_BUCKET }}" \
+              $VERSION_ARG $APP_VERSION_ARG \
+              --verify
+          else
+            echo "Packaging chart locally (dry-run/local mode)..."
+            ./helm/publish-chart.sh --target local $VERSION_ARG $APP_VERSION_ARG
+          fi
