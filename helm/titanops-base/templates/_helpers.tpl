@@ -37,6 +37,9 @@ helm.sh/chart: {{ include "titanops-base.chart" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
+{{- if .Values.environment }}
+app.kubernetes.io/environment: {{ .Values.environment | quote }}
+{{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
