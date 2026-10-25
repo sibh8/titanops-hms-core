@@ -1,3 +1,4 @@
+# .gitignore
 .sandbox.env
 
 # Java / Maven
@@ -35,13 +36,25 @@ package-lock.json
 # Extra Files
 *.xlsx
 
-# Terraform generated files
+# Terraform
+**/.terraform/
 **/.terraform/*
 *.tfstate
 *.tfstate.*
 *.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
 
 # Ansible local inventory and secrets
 ansible/inventory/hosts.ini
 *.pem
 *.key
+
+# Helm packaged archives & distribution
+dist/
+*.tgz
+*.tgz.sha256

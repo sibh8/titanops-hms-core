@@ -34,8 +34,11 @@ module "ecr" {
   count  = local.is_aws ? 1 : 0
   source = "../modules/ecr"
 
-  repositories = [for s in keys(local.services) : "${local.name}/${s}"]
-  tags         = local.tags
+  repositories = concat(
+    [for s in keys(local.services) : "${local.name}/${s}"],
+    ["${local.name}/titanops-base"]
+  )
+  tags = local.tags
 }
 
 module "eks" {

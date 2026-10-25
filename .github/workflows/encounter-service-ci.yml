@@ -27,6 +27,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.gitversion.outputs.semVer }}
+      git_sha: ${{ github.sha }}
     steps:
     - uses: actions/checkout@v4
       with:
@@ -86,12 +89,12 @@ jobs:
         fi
 
     - name: Set up GitVersion
-      uses: gittools/actions/gitversion/setup@v4.7.0
+      uses: gittools/actions/gitversion/setup@v0.9.15
       with:
         versionSpec: '5.x'
     - name: Determine Version
       id: gitversion
-      uses: gittools/actions/gitversion/execute@v4.7.0
+      uses: gittools/actions/gitversion/execute@v0.9.15
     - name: Log in to the GitHub Container registry
       uses: docker/login-action@v4
       with:
@@ -109,6 +112,7 @@ jobs:
         push: ${{ github.ref == 'refs/heads/main' }}
         tags: |
           ghcr.io/${{ github.repository }}/encounter-service:${{ steps.gitversion.outputs.semVer }}
+          ghcr.io/${{ github.repository }}/encounter-service:${{ github.sha }}
           ghcr.io/${{ github.repository }}/encounter-service:latest
         outputs: type=docker,dest=/tmp/encounter-service.tar
 
@@ -127,14 +131,17 @@ jobs:
         severity: 'CRITICAL,HIGH'
 
 
-  verify-tooling:
+  deploy:
+    name: Deploy to EKS
     needs: build
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/reusable-ecr-push.yml
     with:
       service_name: encounter-service
       context_dir: encounter-service
       dockerfile: encounter-service/Dockerfile
+      image_tag: ${{ needs.build.outputs.image_tag }}
+      ecr_repository: encounter-service
     permissions:
       id-token: write
       contents: read
