@@ -1,0 +1,120 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: enforce-pod-security-standards
+  annotations:
+    policies.kyverno.io/title: Enforce Pod Security Standards (Restricted) & Resource Governance
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Enforces Kubernetes Pod Security Standards Restricted profile: disallowing root containers,
+      blocking privilege escalation, dropping all Linux capabilities, and mandating CPU/memory
+      limits and requests.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    # Rule 1: Disallow Root User
+    - name: require-non-root-user
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - DaemonSet
+                - StatefulSet
+                - Job
+                - CronJob
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kyverno
+      validate:
+        message: >-
+          validation failure: running as root is prohibited. Containers must set
+          securityContext.runAsNonRoot: true and securityContext.runAsUser > 0.
+        pattern:
+          spec:
+            =(securityContext):
+              runAsNonRoot: true
+            =(template):
+              spec:
+                =(securityContext):
+                  runAsNonRoot: true
+                containers:
+                  - =(securityContext):
+                      runAsNonRoot: true
+                      runAsUser: ">0"
+
+    # Rule 2: Disallow Privilege Escalation & Capabilities
+    - name: disallow-privilege-escalation
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - DaemonSet
+                - StatefulSet
+                - Job
+                - CronJob
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kyverno
+      validate:
+        message: >-
+          validation failure: privilege escalation and privileged containers are strictly
+          forbidden. Containers must set allowPrivilegeEscalation: false and drop ALL capabilities.
+        pattern:
+          spec:
+            =(template):
+              spec:
+                containers:
+                  - securityContext:
+                      allowPrivilegeEscalation: false
+                      =(privileged): false
+                      capabilities:
+                        drop:
+                          - ALL
+
+    # Rule 3: Require CPU & Memory Requests and Limits
+    - name: require-resource-limits
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - DaemonSet
+                - StatefulSet
+                - Job
+                - CronJob
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kyverno
+      validate:
+        message: >-
+          validation failure: CPU and memory requests and limits are mandatory for all
+          containers to prevent noisy neighbor and resource starvation issues.
+        pattern:
+          spec:
+            =(template):
+              spec:
+                containers:
+                  - resources:
+                      requests:
+                        cpu: "?*"
+                        memory: "?*"
+                      limits:
+                        cpu: "?*"
+                        memory: "?*"

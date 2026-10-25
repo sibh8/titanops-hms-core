@@ -63,6 +63,8 @@ features:
   security_hub: false
   secrets_manager: false
   external_secrets: false
+  admission_control: true
+
 
 # Per-service enable switch. Disable one -> Terraform removes its Helm release.
 services:
