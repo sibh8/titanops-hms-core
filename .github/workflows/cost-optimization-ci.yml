@@ -1,0 +1,54 @@
+name: Cost Optimization & Autoscaling Validation (TITANOPS-123)
+
+on:
+  pull_request:
+    paths:
+      - 'infra/infra-stack/modules/eks/**'
+      - 'infra/infra-stack/modules/remote-state/**'
+      - 'infra/infra-stack/hms-core-stack/**'
+      - 'infra/remote-state/**'
+      - 'infra/environments/dev/infra-config/**'
+      - 'k8s/cluster-autoscaler/**'
+      - 'infra/test/verify-cost-optimization.sh'
+      - '.github/workflows/cost-optimization-ci.yml'
+  push:
+    branches:
+      - main
+      - 'feature/TITANOPS-123*'
+    paths:
+      - 'infra/infra-stack/modules/eks/**'
+      - 'infra/infra-stack/modules/remote-state/**'
+      - 'infra/infra-stack/hms-core-stack/**'
+      - 'infra/remote-state/**'
+      - 'infra/environments/dev/infra-config/**'
+      - 'k8s/cluster-autoscaler/**'
+      - 'infra/test/verify-cost-optimization.sh'
+      - '.github/workflows/cost-optimization-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  verify-cost-optimization:
+    name: Verify Cost Optimization (Spot, Autoscaler, S3 Lifecycle)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v5
+        with:
+          version: v1.30.0
+
+      - name: Run 30-Check Cost Optimization Verification Suite
+        run: |
+          chmod +x ./infra/test/verify-cost-optimization.sh
+          ./infra/test/verify-cost-optimization.sh

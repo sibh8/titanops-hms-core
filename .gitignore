@@ -1,3 +1,4 @@
+# .gitignore
 .sandbox.env
 
 # Java / Maven
@@ -35,8 +36,20 @@ package-lock.json
 # Extra Files
 *.xlsx
 
-# Terraform generated files
+# Terraform
+**/.terraform/
 **/.terraform/*
 *.tfstate
 *.tfstate.*
 *.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Helm packaged archives & distribution
+dist/
+*.tgz
+*.tgz.sha256
