@@ -1,0 +1,49 @@
+# ==============================================================================
+# Environment Configuration: Development (dev)
+# Purpose: Low-resource footprint, fast iteration, single-replica, debug logs
+# ==============================================================================
+environment: dev
+replicaCount: 1
+
+image:
+  pullPolicy: Always
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 512Mi
+
+autoscaling:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: false
+
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/group.name: medicore-dev
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+  hosts:
+    - host: dev.medicore.titanops.io
+      paths:
+        - path: /
+          pathType: Prefix
+
+env:
+  SPRING_PROFILES_ACTIVE: "dev"
+  LOGGING_LEVEL_ROOT: "DEBUG"
+  LOGGING_LEVEL_COM_MEDICORE: "DEBUG"
+
+nodeSelector:
+  environment: dev
+
+tolerations: []
+affinity: {}
+topologySpreadConstraints: []

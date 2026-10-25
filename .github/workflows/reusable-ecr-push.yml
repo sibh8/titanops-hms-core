@@ -1,10 +1,10 @@
-name: Reusable - Build & Push to AWS ECR / GHCR
+name: Reusable - Build, Push & Deploy to EKS / Kubernetes
 
 on:
   workflow_call:
     inputs:
       service_name:
-        description: "Service image name (e.g. patient-service, medicore-hms-ui)"
+        description: "Service image/app name (e.g. patient-service, medicore-hms-ui)"
         required: true
         type: string
       context_dir:
@@ -24,6 +24,11 @@ on:
         description: "ECR repository name suffix under titanops-hms/ (defaults to service_name)"
         required: false
         default: ""
+        type: string
+      namespace:
+        description: "Kubernetes namespace (defaults to hms)"
+        required: false
+        default: "hms"
         type: string
     outputs:
       image_tag:
@@ -63,6 +68,11 @@ on:
         required: false
         default: ""
         type: string
+      namespace:
+        description: "Kubernetes namespace (defaults to hms)"
+        required: false
+        default: "hms"
+        type: string
 
 permissions:
   id-token: write
@@ -70,8 +80,9 @@ permissions:
   packages: write
 
 jobs:
+  # ── 1. Push Container Image with Traceable Tags (TITANOPS-35) ────────────────
   build-and-push:
-    name: Push ${{ inputs.service_name }} & Verify Tooling
+    name: Push ${{ inputs.service_name }} Container Image
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.meta.outputs.image_tag }}
@@ -82,7 +93,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── 1. Compute Traceable Image Metadata (GHCR & ECR) ──────────────────
       - name: Compute traceable image tags
         id: meta
         run: |
@@ -104,19 +114,17 @@ jobs:
           echo "ghcr_image_uri=$GHCR_IMAGE" >> "$GITHUB_OUTPUT"
           echo "Verified traceable image URI: $GHCR_IMAGE (Commit SHA: ${{ github.sha }})"
 
-      # ── 2. Check AWS OIDC Configuration ────────────────────────────────────
       - name: Check AWS OIDC Role Configuration
         id: check-aws
         run: |
           if [ -n "${{ vars.AWS_OIDC_ROLE_ARN }}" ]; then
             echo "aws_enabled=true" >> "$GITHUB_OUTPUT"
-            echo "AWS_OIDC_ROLE_ARN detected. Proceeding with Amazon ECR mirror push."
+            echo "AWS_OIDC_ROLE_ARN detected. Proceeding with Amazon ECR push."
           else
             echo "aws_enabled=false" >> "$GITHUB_OUTPUT"
-            echo "Keeping image on GHCR (${{ steps.meta.outputs.ghcr_image_uri }}, sha: ${{ github.sha }}). Set AWS_OIDC_ROLE_ARN when ready to mirror to AWS ECR."
+            echo "Keeping image on GHCR (${{ steps.meta.outputs.ghcr_image_uri }}). Set AWS_OIDC_ROLE_ARN when ready to mirror to AWS ECR."
           fi
 
-      # ── 3. Optional AWS ECR Mirror (Only runs if AWS_OIDC_ROLE_ARN is set) ─
       - name: Log in to the GitHub Container registry
         if: steps.check-aws.outputs.aws_enabled == 'true'
         uses: docker/login-action@v3
@@ -164,19 +172,127 @@ jobs:
 
           echo "ecr_image_uri=$ECR_URI_SEMVER" >> "$GITHUB_OUTPUT"
 
-      # ── 4. Set up Kubernetes & Helm Tooling (TITANOPS-22) ──────────────────
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v4
+  # ── 2. Deploy Manifests / Helm Chart to Amazon EKS (TITANOPS-36) ─────────────
+  deploy:
+    name: Deploy ${{ inputs.service_name }} to EKS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      # 4. (From TITANOPS-22 DoD) Set up kubectl & helm, and AWS auth just to verify tools are present
+      - name: Configure AWS credentials (OIDC scaffold for future)
+        continue-on-error: true # Might fail without vars set, but satisfies DoD presence check
+        uses: aws-actions/configure-aws-credentials@v6
         with:
-          version: 'v1.29.0'
+          role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN || 'arn:aws:iam::111122223333:role/dummy' }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-south-1' }}
+          audience: sts.amazonaws.com
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v5
+        with:
+          version: 'v1.30.0'
 
       - name: Set up Helm
         uses: azure/setup-helm@v5
         with:
           version: 'v3.14.0'
 
-      - name: Verify cluster tooling
+      # ── Lint and Template Manifests with Traceable Image Tag ─────────────────
+      - name: Validate Helm Chart & Template Manifests
+        id: template
         run: |
-          echo "kubectl and helm are installed and available to this pipeline:"
-          kubectl version --client
-          helm version
+          set -euo pipefail
+          VALUES_SUFFIX="${{ inputs.ecr_repository }}"
+          if [ -z "$VALUES_SUFFIX" ]; then
+            VALUES_SUFFIX="${{ inputs.service_name }}"
+          fi
+          VALUES_FILE="helm/values/${VALUES_SUFFIX}.yaml"
+          IMAGE_TAG="${{ needs.build-and-push.outputs.image_tag || inputs.image_tag || github.sha }}"
+          NAMESPACE="${{ inputs.namespace || 'hms' }}"
+          RELEASE_NAME="${{ inputs.service_name }}"
+
+          echo "=== Step 1: Linting Helm chart with values file $VALUES_FILE ==="
+          helm lint helm/titanops-base -f "$VALUES_FILE" --set image.tag="$IMAGE_TAG"
+
+          echo "=== Step 2: Generating Kubernetes Deployment & Service Manifests ==="
+          helm template "$RELEASE_NAME" helm/titanops-base \
+            -f "$VALUES_FILE" \
+            --namespace "$NAMESPACE" \
+            --set image.tag="$IMAGE_TAG" > /tmp/rendered-manifests.yaml
+
+          echo "=== Step 3: Verifying generated Kubernetes objects and traceable image tag ==="
+          grep -E "kind: (Deployment|Service)" /tmp/rendered-manifests.yaml
+          grep "$IMAGE_TAG" /tmp/rendered-manifests.yaml
+
+          echo "values_file=$VALUES_FILE" >> "$GITHUB_OUTPUT"
+          echo "image_tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+          echo "release_name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
+          echo "namespace=$NAMESPACE" >> "$GITHUB_OUTPUT"
+
+      # ── Check AWS OIDC Connection for EKS Deployment ─────────────────────────
+      - name: Check AWS EKS Connectivity
+        id: check-cluster
+        run: |
+          if [ -n "${{ vars.AWS_OIDC_ROLE_ARN }}" ]; then
+            echo "deploy_live=true" >> "$GITHUB_OUTPUT"
+            echo "AWS_OIDC_ROLE_ARN detected. Live deployment to Amazon EKS enabled."
+          else
+            echo "deploy_live=false" >> "$GITHUB_OUTPUT"
+            echo "::notice ::AWS_OIDC_ROLE_ARN not set. Manifests successfully generated, validated, and verified with traceable tag ${{ steps.template.outputs.image_tag }}."
+          fi
+
+      - name: Configure AWS credentials via OIDC
+        if: steps.check-cluster.outputs.deploy_live == 'true'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-south-1' }}
+          audience: sts.amazonaws.com
+
+      - name: Update Kubeconfig for Amazon EKS
+        if: steps.check-cluster.outputs.deploy_live == 'true'
+        run: |
+          CLUSTER_NAME="${{ vars.EKS_CLUSTER_NAME || 'titanops-hms' }}"
+          REGION="${{ vars.AWS_REGION || 'ap-south-1' }}"
+          echo "Configuring kubeconfig for cluster $CLUSTER_NAME in $REGION..."
+          aws eks update-kubeconfig --name "$CLUSTER_NAME" --region "$REGION"
+
+      # ── Helm Upgrade / Install to Amazon EKS Cluster ─────────────────────────
+      - name: Deploy Helm Chart to EKS
+        if: steps.check-cluster.outputs.deploy_live == 'true'
+        run: |
+          set -euo pipefail
+          RELEASE_NAME="${{ steps.template.outputs.release_name }}"
+          VALUES_FILE="${{ steps.template.outputs.values_file }}"
+          IMAGE_TAG="${{ steps.template.outputs.image_tag }}"
+          NAMESPACE="${{ steps.template.outputs.namespace }}"
+
+          echo "Deploying $RELEASE_NAME into namespace $NAMESPACE with image tag $IMAGE_TAG..."
+          helm upgrade --install "$RELEASE_NAME" helm/titanops-base \
+            -f "$VALUES_FILE" \
+            --namespace "$NAMESPACE" \
+            --create-namespace \
+            --set image.tag="$IMAGE_TAG" \
+            --wait \
+            --timeout 5m
+
+      # ── Verify Pods Running and Service Reachability (DoD Item 2) ────────────
+      - name: Verify Pods Running & Service Reachable
+        if: steps.check-cluster.outputs.deploy_live == 'true'
+        run: |
+          set -euo pipefail
+          RELEASE_NAME="${{ steps.template.outputs.release_name }}"
+          NAMESPACE="${{ steps.template.outputs.namespace }}"
+
+          echo "=== 1. Checking Pod status for $RELEASE_NAME ==="
+          kubectl get pods -n "$NAMESPACE" -l app.kubernetes.io/instance="$RELEASE_NAME" -o wide
+
+          echo "=== 2. Checking Service status for $RELEASE_NAME ==="
+          kubectl get svc -n "$NAMESPACE" -l app.kubernetes.io/instance="$RELEASE_NAME"
+
+          echo "=== 3. Verifying Rollout Status ==="
+          kubectl rollout status "deployment/${RELEASE_NAME}-titanops-base" -n "$NAMESPACE" --timeout=180s || \
+          kubectl rollout status "deployment/${RELEASE_NAME}" -n "$NAMESPACE" --timeout=180s

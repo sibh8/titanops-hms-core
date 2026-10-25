@@ -41,7 +41,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Lint
         run: npm run lint
@@ -98,13 +98,13 @@ jobs:
           fetch-depth: 0
 
       - name: Set up GitVersion
-        uses: gittools/actions/gitversion/setup@v4.7.0
+        uses: gittools/actions/gitversion/setup@v0.9.15
         with:
           versionSpec: '5.x'
 
       - name: Determine Version
         id: gitversion
-        uses: gittools/actions/gitversion/execute@v4.7.0
+        uses: gittools/actions/gitversion/execute@v0.9.15
 
       - name: Log in to the GitHub Container registry
 
@@ -151,9 +151,10 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
 
-  verify-tooling:
+  deploy:
+    name: Deploy to EKS
     needs: docker
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/reusable-ecr-push.yml
     with:
       service_name: medicore-hms-ui
