@@ -49,6 +49,11 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
+# Ansible local inventory and secrets
+ansible/inventory/hosts.ini
+*.pem
+*.key
+
 # Helm packaged archives & distribution
 dist/
 *.tgz
