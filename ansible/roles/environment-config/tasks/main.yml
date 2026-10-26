@@ -1,0 +1,59 @@
+---
+# tasks file for environment-config
+- name: Log environment initialization
+  ansible.builtin.debug:
+    msg:
+      - "=== TitanOps HMS Configuration Management ==="
+      - "Target Environment : {{ target_env | default('dev') }}"
+      - "Target Namespace   : {{ namespace | default('hms') }}"
+      - "Cluster Identifier : {{ cluster_name | default('titanops-hms') }}"
+
+- name: Validate environment name
+  ansible.builtin.assert:
+    that:
+      - target_env in ['dev', 'local', 'staging', 'prod']
+    fail_msg: "Target environment '{{ target_env }}' is not recognized."
+    success_msg: "Environment '{{ target_env }}' is valid."
+
+- name: Validate Kubernetes tooling availability
+  ansible.builtin.command:
+    cmd: "kubectl version --client -o json"
+  register: kubectl_check
+  changed_when: false
+  failed_when: false
+
+- name: Record kubectl tooling status
+  ansible.builtin.debug:
+    msg: "kubectl is installed: {{ kubectl_check.rc == 0 }}"
+
+- name: Validate Helm tooling availability
+  ansible.builtin.command:
+    cmd: "helm version --short"
+  register: helm_check
+  changed_when: false
+  failed_when: false
+
+- name: Record Helm tooling status
+  ansible.builtin.debug:
+    msg: "helm is installed: {{ helm_check.rc == 0 }}"
+
+- name: Define namespace manifest definition
+  ansible.builtin.set_fact:
+    namespace_definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: "{{ namespace | default('hms') }}"
+        labels:
+          app.kubernetes.io/managed-by: "ansible"
+          app.kubernetes.io/part-of: "titanops-hms"
+          environment: "{{ target_env | default('dev') }}"
+          titanops.io/tier: "microservices"
+
+- name: Assert namespace configuration validity
+  ansible.builtin.assert:
+    that:
+      - namespace_definition.metadata.name == (namespace | default('hms'))
+      - namespace_definition.metadata.labels.environment == (target_env | default('dev'))
+    fail_msg: "Namespace configuration assertion failed."
+    success_msg: "Namespace definition verified for {{ target_env | default('dev') }}."

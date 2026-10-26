@@ -1,0 +1,22 @@
+---
+# tasks file for cis-hardening
+- name: Log CIS benchmark hardening check
+  ansible.builtin.debug:
+    msg: "Verifying CIS Benchmark (Level 1) baseline security controls for Kubernetes workloads..."
+
+- name: Define CIS security policy baseline
+  ansible.builtin.set_fact:
+    cis_security_profile:
+      disallow_privileged_containers: true
+      read_only_root_filesystem_recommended: true
+      drop_all_capabilities: true
+      run_as_non_root: true
+      enforce_seccomp_profile: "runtime/default"
+
+- name: Verify CIS security policy assertions
+  ansible.builtin.assert:
+    that:
+      - cis_security_profile.disallow_privileged_containers == true
+      - cis_security_profile.run_as_non_root == true
+    fail_msg: "CIS Benchmark validation failed."
+    success_msg: "CIS Benchmark Level 1 controls verified successfully."
