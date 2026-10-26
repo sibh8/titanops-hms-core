@@ -1,0 +1,38 @@
+name: Dockerfile Hardening & Non-Root Verification
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - '**/Dockerfile'
+      - 'docker-compose.yml'
+      - 'scripts/verify-dockerfile-hardening.sh'
+      - '.github/workflows/dockerfile-hardening-ci.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - '**/Dockerfile'
+      - 'docker-compose.yml'
+      - 'scripts/verify-dockerfile-hardening.sh'
+      - '.github/workflows/dockerfile-hardening-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-dockerfile-hardening:
+    name: Verify Non-Root & Pinned Images (TITANOPS-114)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run Dockerfile Hardening Verification Suite
+        run: |
+          chmod +x scripts/verify-dockerfile-hardening.sh
+          ./scripts/verify-dockerfile-hardening.sh

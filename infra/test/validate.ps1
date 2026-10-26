@@ -71,8 +71,8 @@ Write-Host "   stack: $StackDir`n"
 
 # ---- 1. fmt ----
 Write-Host 'Formatting:'
-Test-Case 'terraform fmt -check -recursive' {
-  terraform "-chdir=$InfraRoot/infra-stack" fmt -check -recursive | Out-Null
+Test-Case 'terraform fmt -check -recursive (all infra)' {
+  terraform "-chdir=$InfraRoot" fmt -check -recursive | Out-Null
   if ($LASTEXITCODE -ne 0) { throw 'files are not formatted; run: terraform fmt -recursive' }
 }
 
@@ -93,6 +93,10 @@ $expectedServices = @(
   'lab-service', 'medication-service', 'patient-service', 'prescription-service',
   'provider-service', 'user-service'
 )
+
+# For offline evaluation, initialize temporary local backend override so console runs without AWS credentials
+Set-Content -Path (Join-Path $StackDir 'backend_override.tf') -Value "terraform {`n  backend `"local`" {}`n}"
+terraform "-chdir=$StackDir" init -reconfigure | Out-Null
 
 $envs = Get-ChildItem -Directory $EnvRoot | Select-Object -ExpandProperty Name
 foreach ($env in $envs) {
@@ -138,7 +142,9 @@ foreach ($env in $envs) {
 }
 
 # ---- cleanup ----
+Remove-Item -Force (Join-Path $StackDir 'backend_override.tf') -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force (Join-Path $StackDir '.terraform') -ErrorAction SilentlyContinue
+Remove-Item -Force (Join-Path $StackDir 'terraform.tfstate*') -ErrorAction SilentlyContinue
 
 Write-Host "`n== Results ==" -ForegroundColor Cyan
 Write-Host "   Passed: $script:Pass" -ForegroundColor Green

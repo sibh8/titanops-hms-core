@@ -1,0 +1,36 @@
+name: Helm Environments Validation
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'helm/**'
+      - '.github/workflows/helm-environments-ci.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'helm/**'
+      - '.github/workflows/helm-environments-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-helm-environments:
+    name: Validate Helm Environments (TITANOPS-50)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.14.0'
+
+      - name: Run Multi-Environment Helm Test Suite
+        run: |
+          chmod +x helm/verify-environments.sh
+          ./helm/verify-environments.sh

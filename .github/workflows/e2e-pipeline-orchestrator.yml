@@ -1,0 +1,69 @@
+name: End-to-End Pipeline Orchestrator
+
+on:
+  workflow_run:
+    workflows:
+      - "Frontend CI"
+      - "Java CI with Maven"
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      service_name:
+        description: "Service name to deploy"
+        required: true
+        default: "appointment-service"
+        type: choice
+        options:
+          - appointment-service
+          - billing-service
+          - encounter-service
+          - frontend
+          - lab-service
+          - medication-service
+          - patient-service
+          - prescription-service
+          - provider-service
+          - user-service
+      environment:
+        description: "Target environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - local
+          - staging
+          - prod
+
+permissions:
+  id-token: write
+  contents: read
+  packages: write
+
+jobs:
+  # Check Upstream Workflow Status (Stops the chain if upstream failed)
+  check-upstream:
+    name: Verify Upstream Workflow Status
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Validate Upstream Success
+        run: |
+          echo "=========================================================="
+          echo "Upstream CI workflow completed successfully."
+          echo "Trigger Event : ${{ github.event_name }}"
+          echo "Conclusion    : ${{ github.event.workflow_run.conclusion || 'manual-dispatch' }}"
+          echo "Hands-off chain proceeding to downstream pipeline stages."
+          echo "=========================================================="
+
+  # Downstream Trigger Chain via Reusable Workflow
+  orchestrate-downstream:
+    name: Run Infrastructure, Configuration, Deploy & Monitoring
+    needs: [check-upstream]
+    uses: ./.github/workflows/reusable-ecr-push.yml
+    with:
+      service_name: ${{ inputs.service_name || 'appointment-service' }}
+      environment: ${{ inputs.environment || 'dev' }}
