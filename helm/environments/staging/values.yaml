@@ -1,0 +1,68 @@
+# ==============================================================================
+# Environment Configuration: Staging (staging)
+# Purpose: Pre-production QA, multi-replica failover testing, info logs
+# ==============================================================================
+environment: staging
+replicaCount: 2
+
+image:
+  pullPolicy: IfNotPresent
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 1024Mi
+
+autoscaling:
+  enabled: false
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/group.name: medicore-staging
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+  hosts:
+    - host: staging.medicore.titanops.io
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - hosts:
+        - staging.medicore.titanops.io
+      secretName: medicore-staging-tls-secret
+
+env:
+  SPRING_PROFILES_ACTIVE: "staging"
+  LOGGING_LEVEL_ROOT: "INFO"
+  LOGGING_LEVEL_COM_MEDICORE: "INFO"
+
+nodeSelector:
+  environment: staging
+
+tolerations: []
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - titanops-base
+          topologyKey: kubernetes.io/hostname
+
+topologySpreadConstraints: []
