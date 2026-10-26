@@ -36,12 +36,12 @@ jobs:
           fetch-depth: 0   # required by GitVersion
 
       - name: Set up Node.js 20
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm install --legacy-peer-deps
 
       - name: Lint
         run: npm run lint
@@ -51,6 +51,37 @@ jobs:
         env:
           # Keeps the build environment-agnostic; nginx proxies API calls at runtime
           VITE_API_BASE_URL: ''
+
+      # ── Dependency / SCA Vulnerability Scan (Frontend) ──────────────────────
+      - name: Run Dependency / SCA Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'frontend'
+          format: 'table'
+          vuln-type: 'library'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          output: 'sca-report.txt'
+
+      - name: Surface High/Critical Dependency Findings in PR Summary
+        if: always()
+        run: |
+          echo "## 🛡️ Dependency / SCA Vulnerability Scan Report (Frontend)" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Target:** \`frontend/package.json\` / Node.js Dependencies" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ -s sca-report.txt ]; then
+            cat sca-report.txt
+            echo '```text' >> "$GITHUB_STEP_SUMMARY"
+            cat sca-report.txt >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            if grep -q -E "(CRITICAL|HIGH)" sca-report.txt; then
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo "⚠️ **High/Critical findings detected in frontend dependencies!**" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo "✅ No High/Critical frontend dependency vulnerabilities detected." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   # ── 2. Security scan (CodeQL – JavaScript/TypeScript) ────────────────────────
   codeql:
@@ -67,18 +98,18 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: javascript
           queries: security-and-quality
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@v4
         env:
           working-directory: frontend
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: '/language:javascript'
           upload: false
@@ -90,6 +121,7 @@ jobs:
     needs: build
     outputs:
       image_tag: ${{ steps.gitversion.outputs.semVer }}
+      git_sha: ${{ github.sha }}
 
     steps:
       - uses: actions/checkout@v4
@@ -107,7 +139,7 @@ jobs:
 
       - name: Log in to the GitHub Container registry
 
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
 
         with:
 
@@ -122,13 +154,14 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: frontend
           file:    frontend/Dockerfile
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: |
             ghcr.io/${{ github.repository }}/medicore-hms-ui:${{ steps.gitversion.outputs.semVer }}
+            ghcr.io/${{ github.repository }}/medicore-hms-ui:${{ github.sha }}
             ghcr.io/${{ github.repository }}/medicore-hms-ui:latest
           cache-from: type=gha
           cache-to:   type=gha,mode=max
@@ -150,16 +183,16 @@ jobs:
 
 
   deploy:
-    name: Deploy to EKS via Helm
+    name: Deploy to EKS
     needs: docker
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/reusable-ecr-push.yml
     with:
-      service_name: frontend
+      service_name: medicore-hms-ui
       context_dir: frontend
       dockerfile: frontend/Dockerfile
       image_tag: ${{ needs.docker.outputs.image_tag }}
-      environment: dev
+      ecr_repository: frontend
     permissions:
       id-token: write
       contents: read

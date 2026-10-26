@@ -29,18 +29,19 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.gitversion.outputs.semVer }}
+      git_sha: ${{ github.sha }}
     steps:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
     - name: Set up JDK 11
-      uses: actions/setup-java@v4
+      uses: actions/setup-java@v6
       with:
         java-version: '11'
         distribution: 'temurin'
         cache: maven
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      uses: github/codeql-action/init@v4
       with:
         languages: java
     - name: Make Maven wrapper executable
@@ -49,9 +50,44 @@ jobs:
     - name: Build with Maven
       run: ./mvnw -B package --file pom.xml
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@v4
       with:
         upload: false
+
+    # ── Dependency / SCA Vulnerability Scan ─────────────────────────────────
+    # Performs Software Composition Analysis (SCA) to identify known CVEs in
+    # third-party libraries (e.g., Spring Boot 2.5.14 and its transitive dependencies).
+    - name: Run Dependency / SCA Vulnerability Scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: 'provider-service'
+        format: 'table'
+        vuln-type: 'library'
+        severity: 'CRITICAL,HIGH'
+        exit-code: '0'
+        output: 'sca-report.txt'
+
+    - name: Surface High/Critical Dependency Findings in PR Summary
+      if: always()
+      run: |
+        echo "## 🛡️ Dependency / SCA Vulnerability Scan Report" >> "$GITHUB_STEP_SUMMARY"
+        echo "**Target:** \`provider-service/pom.xml\` / Third-Party Dependencies" >> "$GITHUB_STEP_SUMMARY"
+        echo "" >> "$GITHUB_STEP_SUMMARY"
+        if [ -s sca-report.txt ]; then
+          cat sca-report.txt
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          cat sca-report.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          if grep -q -E "(CRITICAL|HIGH)" sca-report.txt; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "⚠️ **High/Critical findings detected in dependencies!**" >> "$GITHUB_STEP_SUMMARY"
+            echo "> **Note:** Service is running on end-of-life **Spring Boot 2.5.14**. See tracked upgrade path: [\`docs/SPRING-BOOT-UPGRADE-PATH.md\`](https://github.com/${{ github.repository }}/blob/main/docs/SPRING-BOOT-UPGRADE-PATH.md)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+        else
+          echo "✅ No High/Critical dependency vulnerabilities detected." >> "$GITHUB_STEP_SUMMARY"
+        fi
+
     - name: Set up GitVersion
       uses: gittools/actions/gitversion/setup@v0.9.15
       with:
@@ -60,7 +96,7 @@ jobs:
       id: gitversion
       uses: gittools/actions/gitversion/execute@v0.9.15
     - name: Log in to the GitHub Container registry
-      uses: docker/login-action@v3
+      uses: docker/login-action@v4
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
@@ -69,13 +105,14 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
     - name: Build and push Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v7
       with:
         context: provider-service
         file: provider-service/Dockerfile
         push: ${{ github.ref == 'refs/heads/main' }}
         tags: |
           ghcr.io/${{ github.repository }}/provider-service:${{ steps.gitversion.outputs.semVer }}
+          ghcr.io/${{ github.repository }}/provider-service:${{ github.sha }}
           ghcr.io/${{ github.repository }}/provider-service:latest
         outputs: type=docker,dest=/tmp/provider-service.tar
 
@@ -95,7 +132,7 @@ jobs:
 
 
   deploy:
-    name: Deploy to EKS via Helm
+    name: Deploy to EKS
     needs: build
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/reusable-ecr-push.yml
@@ -104,7 +141,7 @@ jobs:
       context_dir: provider-service
       dockerfile: provider-service/Dockerfile
       image_tag: ${{ needs.build.outputs.image_tag }}
-      environment: dev
+      ecr_repository: provider-service
     permissions:
       id-token: write
       contents: read

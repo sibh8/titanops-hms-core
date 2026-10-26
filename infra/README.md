@@ -390,10 +390,9 @@ infra\test\smoke-aws.ps1 -Environment dev
 
 ---
 
-## Remote state backend
+## Remote state backend (TITANOPS-29)
 
-By default Terraform uses local state. For shared/team use, enable the encrypted,
-versioned, locked S3 backend in `hms-core-stack/versions.tf` (currently commented):
+Terraform state is stored in an encrypted, versioned, locked S3 backend with DynamoDB distributed locking to ensure safe, team-wide state sharing and prevent concurrent state corruption:
 
 ```hcl
 backend "s3" {
@@ -405,8 +404,40 @@ backend "s3" {
 }
 ```
 
-Create the bucket (versioning + encryption + block-public-access) and the DynamoDB lock
-table first, then re-run `terraform init`.
+### Architecture & Security Controls (DoD Compliance)
+- **S3 Bucket (`titanops-hms-tfstate`)**:
+  - **Versioning Enabled (DoD #3)**: Protects against accidental deletion and enables state rollbacks.
+  - **Server-Side Encryption**: Encrypted at rest via AES256 / AWS KMS (`encrypt = true`).
+  - **Public Access Blocked (DoD #3)**: All 4 public access controls enforced (`block_public_acls = true`, etc.).
+  - **In-Transit TLS Enforcement**: Denies unencrypted HTTP connections (`aws:SecureTransport: false`).
+  - **Lifecycle Expiration**: Expired noncurrent state versions after 90 days for cost optimization.
+- **DynamoDB State Locking Table (`titanops-hms-tflock`) (DoD #2)**:
+  - **Partition Key**: `LockID` (String) required by Terraform S3 backend.
+  - **Billing Mode**: `PAY_PER_REQUEST` (on-demand capacity mode, zero idle cost).
+  - Prevents race conditions during concurrent `terraform apply` or CI/CD runs.
+
+### Bootstrapping Remote State
+1. Provision the S3 bucket and DynamoDB lock table:
+   ```bash
+   cd infra/remote-state
+   terraform init
+   terraform apply
+   ```
+2. Initialize the main stack with the S3 backend:
+   ```bash
+   # Using the HMS wrapper script:
+   ./infra/scripts/hms.sh dev init
+
+   # Or direct with migration:
+   cd infra/infra-stack/hms-core-stack
+   terraform init -migrate-state
+   ```
+
+### Verification Suite
+Run the automated remote state verification test suite:
+```bash
+./infra/test/verify-remote-state.sh
+```
 
 ---
 

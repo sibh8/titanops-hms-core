@@ -1,0 +1,121 @@
+# ==============================================================================
+# Dependabot Configuration
+# Repository: titanops-hms-core
+# Description: Automated dependency scanning and security updates across all
+#              microservices, frontend application, and CI/CD actions.
+# ==============================================================================
+version: 2
+updates:
+  # ── Java Microservices (Maven) ─────────────────────────────────────────────
+  - package-ecosystem: "maven"
+    directory: "/appointment-service"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+      - "sca"
+
+  - package-ecosystem: "maven"
+    directory: "/billing-service"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+      - "sca"
+
+  - package-ecosystem: "maven"
+    directory: "/encounter-service"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+      - "sca"
+
+  - package-ecosystem: "maven"
+    directory: "/lab-service"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+      - "sca"
+
+  - package-ecosystem: "maven"
+    directory: "/medication-service"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+      - "sca"
+
+  - package-ecosystem: "maven"
+    directory: "/patient-service"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+      - "sca"
+
+  - package-ecosystem: "maven"
+    directory: "/prescription-service"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+      - "sca"
+
+  - package-ecosystem: "maven"
+    directory: "/provider-service"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+      - "sca"
+
+  - package-ecosystem: "maven"
+    directory: "/user-service"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "security"
+      - "sca"
+
+  # ── Frontend Application (npm) ─────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "security"
+      - "sca"
+
+  # ── GitHub Actions Workflows ────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "ci/cd"
+      - "security"

@@ -49,10 +49,10 @@ echo -e "   stack: $STACK_DIR\n"
 
 # ---- 1. fmt ----
 echo "Formatting:"
-if terraform -chdir="$INFRA_ROOT/infra-stack" fmt -check -recursive >/dev/null 2>&1; then
-  pass "terraform fmt -check -recursive"
+if terraform -chdir="$INFRA_ROOT" fmt -check -recursive >/dev/null 2>&1; then
+  pass "terraform fmt -check -recursive (all infra)"
 else
-  fail "terraform fmt -check -recursive" "files not formatted; run: terraform fmt -recursive"
+  fail "terraform fmt -check -recursive (all infra)" "files not formatted; run: terraform fmt -recursive"
 fi
 
 # ---- 2. init ----
@@ -71,6 +71,10 @@ else
 fi
 
 # ---- 4 + 5. per-environment ----
+# For offline evaluation, initialize temporary local backend override so console runs without AWS credentials
+printf 'terraform {\n  backend "local" {}\n}\n' > "$STACK_DIR/backend_override.tf"
+terraform -chdir="$STACK_DIR" init -reconfigure >/dev/null 2>&1
+
 for env_path in "$ENV_ROOT"/*/; do
   env="$(basename "$env_path")"
   echo "Environment '$env':"
@@ -130,7 +134,8 @@ for env_path in "$ENV_ROOT"/*/; do
 done
 
 # ---- cleanup ----
-rm -rf "$STACK_DIR/.terraform"
+rm -f "$STACK_DIR/backend_override.tf"
+rm -rf "$STACK_DIR/.terraform" "$STACK_DIR/terraform.tfstate"*
 
 echo -e "\n${CYAN}== Results ==${NC}"
 echo -e "   ${GREEN}Passed: $PASS${NC}"

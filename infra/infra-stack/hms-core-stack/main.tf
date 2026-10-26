@@ -34,8 +34,11 @@ module "ecr" {
   count  = local.is_aws ? 1 : 0
   source = "../modules/ecr"
 
-  repositories = [for s in keys(local.services) : "${local.name}/${s}"]
-  tags         = local.tags
+  repositories = concat(
+    [for s in keys(local.services) : "${local.name}/${s}"],
+    ["${local.name}/titanops-base"]
+  )
+  tags = local.tags
 }
 
 module "eks" {
@@ -51,7 +54,16 @@ module "eks" {
   node_desired           = try(local.aws_cfg.node_desired, 2)
   node_min               = try(local.aws_cfg.node_min, 2)
   node_max               = try(local.aws_cfg.node_max, 4)
-  tags                   = local.tags
+
+  # Cost Optimization: Spot node groups and Cluster Autoscaler (TITANOPS-123)
+  enable_spot_node_group    = try(local.aws_cfg.enable_spot_node_group, true)
+  spot_instance_types       = try(local.aws_cfg.spot_instance_types, ["t3.large", "t3a.large", "m5.large", "m5a.large"])
+  spot_desired              = try(local.aws_cfg.spot_desired, 2)
+  spot_min                  = try(local.aws_cfg.spot_min, 1)
+  spot_max                  = try(local.aws_cfg.spot_max, 8)
+  enable_cluster_autoscaler = try(local.aws_cfg.enable_cluster_autoscaler, true)
+
+  tags = local.tags
 }
 
 module "rds" {
@@ -79,6 +91,25 @@ module "iam_oidc" {
   github_repo      = local.cfg.github.repo
   allowed_branches = try(local.cfg.github.branches, ["main"])
   tags             = local.tags
+}
+
+# Grant GitHub Actions OIDC role access to the EKS cluster (for kubectl/helm deploy & verification)
+resource "aws_eks_access_entry" "gha" {
+  count         = local.is_aws ? 1 : 0
+  cluster_name  = module.eks[0].cluster_name
+  principal_arn = module.iam_oidc[0].role_arn
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "gha" {
+  count         = local.is_aws ? 1 : 0
+  cluster_name  = module.eks[0].cluster_name
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  principal_arn = module.iam_oidc[0].role_arn
+
+  access_scope {
+    type = "cluster"
+  }
 }
 
 # ---------- Optional, count-gated features (AWS only) ----------
