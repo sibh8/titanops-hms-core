@@ -14,3 +14,22 @@ node_desired_size     = 2
 node_min_size         = 1
 node_max_size         = 2
 bastion_instance_type = "t3.micro"
+
+# EKS API Access Hardening (TITANOPS-121)
+eks_endpoint_private_access = true
+eks_endpoint_public_access  = true
+eks_public_access_cidrs     = []
+
+# Kubernetes Namespace (TITANOPS-120)
+kubernetes_namespace = "titanops"
+
+# AWS RDS Multi-AZ MySQL (TITANOPS-118)
+database_name               = "medicore_hms"
+database_username           = "medicore"
+rds_allocated_storage       = 20
+rds_max_allocated_storage   = 100
+rds_instance_class          = "db.t3.medium"
+rds_mysql_version           = "8.0.35"
+rds_multi_az                = true
+rds_backup_retention_period = 7
+rds_skip_final_snapshot     = true
