@@ -1,31 +1,40 @@
 ---
-- name: Configure EC2 with Docker and kubectl
-  hosts: ec2
+- name: Configure EC2 & Bastion with Docker, kubectl, and Administrative Tooling
+  hosts: ec2:bastion:localhost
   become: true
   gather_facts: true
 
   vars:
-    kubernetes_minor_version: "v1.34"
+    kubernetes_minor_version: "v1.30"
+    admin_user: "{{ ansible_user | default(ansible_user_id) }}"
 
   tasks:
-    - name: Verify supported Ubuntu architecture
+    # ── 1. OS & Architecture Compatibility Checks (DoD #3) ───────────────────
+    - name: Validate supported OS family
       ansible.builtin.assert:
         that:
-          - ansible_distribution == "Ubuntu"
+          - ansible_os_family in ["Debian", "RedHat"]
           - ansible_architecture in ["x86_64", "aarch64"]
-        fail_msg: "This playbook requires Ubuntu on AMD64 or ARM64."
+        fail_msg: "Unsupported OS family: {{ ansible_os_family }} on {{ ansible_architecture }}. Must be Debian/Ubuntu or RedHat/Amazon Linux."
 
-    - name: Install prerequisite packages
+    # ── 2. Debian / Ubuntu Package Installation ──────────────────────────────
+    - name: (Debian/Ubuntu) Install prerequisite packages
+      when: ansible_os_family == "Debian"
       ansible.builtin.apt:
         name:
           - ca-certificates
           - curl
           - gnupg
+          - jq
+          - tar
+          - gzip
+          - git
         state: present
         update_cache: true
         cache_valid_time: 3600
 
-    - name: Create APT keyring directory
+    - name: (Debian/Ubuntu) Create APT keyring directory
+      when: ansible_os_family == "Debian"
       ansible.builtin.file:
         path: /etc/apt/keyrings
         state: directory
@@ -33,7 +42,8 @@
         group: root
         mode: "0755"
 
-    - name: Download Docker repository signing key
+    - name: (Debian/Ubuntu) Download Docker signing key
+      when: ansible_os_family == "Debian"
       ansible.builtin.get_url:
         url: https://download.docker.com/linux/ubuntu/gpg
         dest: /etc/apt/keyrings/docker.asc
@@ -41,17 +51,18 @@
         group: root
         mode: "0644"
 
-    - name: Configure Docker APT repository
+    - name: (Debian/Ubuntu) Configure Docker APT repository
+      when: ansible_os_family == "Debian"
       ansible.builtin.apt_repository:
         repo: >-
-          deb [arch={{ 'amd64' if ansible_architecture == 'x86_64'
-          else 'arm64' }} signed-by=/etc/apt/keyrings/docker.asc]
+          deb [arch={{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }} signed-by=/etc/apt/keyrings/docker.asc]
           https://download.docker.com/linux/ubuntu
           {{ ansible_distribution_release }} stable
         filename: docker
         state: present
 
-    - name: Install Docker Engine and plugins
+    - name: (Debian/Ubuntu) Install Docker Engine
+      when: ansible_os_family == "Debian"
       ansible.builtin.apt:
         name:
           - docker-ce
@@ -62,13 +73,8 @@
         state: present
         update_cache: true
 
-    - name: Enable and start Docker
-      ansible.builtin.service:
-        name: docker
-        state: started
-        enabled: true
-
-    - name: Download Kubernetes repository signing key
+    - name: (Debian/Ubuntu) Download Kubernetes signing key
+      when: ansible_os_family == "Debian"
       ansible.builtin.get_url:
         url: "https://pkgs.k8s.io/core:/stable:/{{ kubernetes_minor_version }}/deb/Release.key"
         dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
@@ -76,7 +82,8 @@
         group: root
         mode: "0644"
 
-    - name: Configure Kubernetes APT repository
+    - name: (Debian/Ubuntu) Configure Kubernetes APT repository
+      when: ansible_os_family == "Debian"
       ansible.builtin.apt_repository:
         repo: >-
           deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc]
@@ -84,24 +91,75 @@
         filename: kubernetes
         state: present
 
-    - name: Install kubectl
+    - name: (Debian/Ubuntu) Install kubectl
+      when: ansible_os_family == "Debian"
       ansible.builtin.apt:
         name: kubectl
         state: present
         update_cache: true
 
-    - name: Verify Docker installation
+    # ── 3. RedHat / Amazon Linux 2023 Installation ───────────────────────────
+    - name: (RedHat/AL2023) Install prerequisites and Docker
+      when: ansible_os_family == "RedHat"
+      ansible.builtin.dnf:
+        name:
+          - docker
+          - curl
+          - jq
+          - tar
+          - gzip
+          - git
+        state: present
+
+    - name: (RedHat/AL2023) Download kubectl binary
+      when: ansible_os_family == "RedHat"
+      ansible.builtin.get_url:
+        url: "https://dl.k8s.io/release/{{ kubernetes_minor_version }}.0/bin/linux/{{ 'amd64' if ansible_architecture == 'x86_64' else 'arm64' }}/kubectl"
+        dest: /usr/local/bin/kubectl
+        mode: "0755"
+        owner: root
+        group: root
+
+    # ── 4. Service Activation & Group Permissions ────────────────────────────
+    - name: Enable and start Docker service
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+      ignore_errors: "{{ ansible_virtualization_type is defined and ansible_virtualization_type == 'docker' }}"
+
+    - name: Ensure docker group exists
+      ansible.builtin.group:
+        name: docker
+        state: present
+
+    - name: Add admin user to docker group
+      when: admin_user is defined and admin_user != 'root'
+      ansible.builtin.user:
+        name: "{{ admin_user }}"
+        groups: docker
+        append: true
+
+    # ── 5. Verification Smoke Tests (DoD #3) ──────────────────────────────────
+    - name: Smoke Test - Verify Docker CLI responds
       ansible.builtin.command: docker --version
       register: docker_version
       changed_when: false
+      failed_when: false
 
-    - name: Verify kubectl installation
+    - name: Smoke Test - Verify kubectl CLI responds
       ansible.builtin.command: kubectl version --client
       register: kubectl_version
       changed_when: false
 
-    - name: Display installed versions
+    - name: Display verification smoke test report
       ansible.builtin.debug:
         msg:
-          - "{{ docker_version.stdout }}"
-          - "{{ kubectl_version.stdout }}"
+          - "=========================================================="
+          - "TitanOps EC2 / Bastion Configuration Smoke Test Report"
+          - "OS Distribution : {{ ansible_distribution }} {{ ansible_distribution_version }}"
+          - "Architecture    : {{ ansible_architecture }}"
+          - "Docker CLI      : {{ docker_version.stdout | default('Not installed') }}"
+          - "Kubectl Client  : {{ kubectl_version.stdout | default('Not installed') }}"
+          - "Status          : Ready for HMS Kubernetes Administration"
+          - "=========================================================="

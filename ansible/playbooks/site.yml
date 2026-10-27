@@ -6,7 +6,7 @@
 
   vars:
     target_env: "{{ env | default('dev') }}"
-    namespace: "{{ k8s_namespace | default('hms') }}"
+    target_namespace: "{{ k8s_namespace | default('hms') }}"
     cluster_name: "{{ eks_cluster_name | default('titanops-hms') }}"
 
   roles:
@@ -20,6 +20,6 @@
           - "=========================================================="
           - "TitanOps Ansible Configuration Complete"
           - "Target Environment : {{ target_env }}"
-          - "Namespace          : {{ namespace }}"
+          - "Namespace          : {{ target_namespace }}"
           - "Status             : Ready for Helm application deployment"
           - "=========================================================="

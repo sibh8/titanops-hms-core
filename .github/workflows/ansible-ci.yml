@@ -1,0 +1,167 @@
+name: Ansible Configuration Management
+
+on:
+  pull_request:
+    paths:
+      - "ansible/**"
+      - ".github/workflows/ansible-ci.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "ansible/**"
+      - ".github/workflows/ansible-ci.yml"
+  workflow_dispatch:
+    inputs:
+      target_env:
+        description: "Target Environment"
+        required: true
+        default: "dev"
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      target_playbook:
+        description: "Playbook to execute"
+        required: true
+        default: "ansible/playbooks/site.yml"
+        type: choice
+        options:
+          - "ansible/playbooks/site.yml"
+          - "ansible/playbooks/setup-ec2.yml"
+      inventory_path:
+        description: "Inventory file or script"
+        required: false
+        default: "ansible/inventory/hosts.ini"
+        type: string
+      check_mode:
+        description: "Run in dry-run / check mode (--check)"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  ANSIBLE_CONFIG: "ansible/ansible.cfg"
+  ANSIBLE_FORCE_COLOR: "1"
+  PY_COLORS: "1"
+
+jobs:
+  lint-and-validate:
+    name: Lint & Validate Ansible Playbooks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Ansible & Validation Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible ansible-lint flake8
+
+      - name: Verify Ansible Installation
+        run: |
+          ansible --version
+          ansible-lint --version
+
+      - name: Playbook Syntax Validation (DoD #1)
+        run: |
+          echo "=== Running Ansible Syntax Checks ==="
+          ansible-playbook --syntax-check ansible/playbooks/site.yml
+          ansible-playbook --syntax-check ansible/playbooks/setup-ec2.yml
+
+      - name: Ansible Inventory Graph Check
+        run: |
+          echo "=== Validating Static & Dynamic Inventories ==="
+          ansible-inventory -i ansible/inventory/hosts.ini --graph
+          python3 ansible/inventory/dynamic_inventory.py --list > /dev/null
+          echo "Inventories parsed successfully."
+
+  execute-playbook:
+    name: Execute Ansible Configuration
+    needs: lint-and-validate
+    runs-on: ubuntu-latest
+    env:
+      TARGET_ENV: ${{ inputs.target_env || 'dev' }}
+      PLAYBOOK: ${{ inputs.target_playbook || 'ansible/playbooks/site.yml' }}
+      INVENTORY: ${{ inputs.inventory_path || 'ansible/inventory/hosts.ini' }}
+      CHECK_FLAG: ${{ inputs.check_mode == true && '--check' || '' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible Core & Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Set up Kubernetes & Helm Client Tooling
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "v1.30.0"
+
+      - name: Set up Helm Client Tooling
+        uses: azure/setup-helm@v4
+
+      - name: Execute Ansible Playbook (DoD #1 & #3)
+        id: run-playbook
+        run: |
+          set -euo pipefail
+          mkdir -p ansible/logs
+          LOG_FILE="ansible/logs/ansible-run-$(date +%s).log"
+
+          echo "=========================================================="
+          echo "Starting Ansible Configuration Management"
+          echo "Playbook    : $PLAYBOOK"
+          echo "Environment : $TARGET_ENV"
+          echo "Inventory   : $INVENTORY"
+          echo "Check Mode  : ${CHECK_FLAG:-false}"
+          echo "=========================================================="
+
+          # Execute with verbose logging (-v) for troubleshooting
+          ansible-playbook \
+            -i "$INVENTORY" \
+            "$PLAYBOOK" \
+            -e "env=$TARGET_ENV" \
+            -e "target_env=$TARGET_ENV" \
+            $CHECK_FLAG \
+            -v | tee "$LOG_FILE"
+
+          echo "log_file=$LOG_FILE" >> "$GITHUB_OUTPUT"
+
+      - name: Surface Ansible Run Summary in Job Report
+        if: always()
+        run: |
+          echo "## 🛠️ Ansible Configuration Run Summary (TITANOPS-31)" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Playbook:** \`${{ env.PLAYBOOK }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Environment:** \`${{ env.TARGET_ENV }}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Status:** ${{ steps.run-playbook.outcome == 'success' && '✅ SUCCESS' || '❌ FAILED' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```text' >> "$GITHUB_STEP_SUMMARY"
+          tail -n 30 ansible/logs/*.log >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || echo "No log captured" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Ansible Execution Logs (DoD #1)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ansible-execution-logs-${{ env.TARGET_ENV }}
+          path: ansible/logs/
+          retention-days: 7
