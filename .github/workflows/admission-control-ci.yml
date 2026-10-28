@@ -1,0 +1,46 @@
+name: Admission Control & Pod Security Standards (TITANOPS-125)
+
+on:
+  pull_request:
+    paths:
+      - 'k8s/admission-control/**'
+      - 'infra/infra-stack/modules/admission-control/**'
+      - 'infra/infra-stack/hms-core-stack/**'
+      - 'infra/environments/dev/infra-config/**'
+      - 'infra/environments/local/infra-config/**'
+      - 'infra/test/verify-admission-control.sh'
+      - '.github/workflows/admission-control-ci.yml'
+  push:
+    branches:
+      - main
+      - 'feature/TITANOPS-125*'
+    paths:
+      - 'k8s/admission-control/**'
+      - 'infra/infra-stack/modules/admission-control/**'
+      - 'infra/infra-stack/hms-core-stack/**'
+      - 'infra/environments/dev/infra-config/**'
+      - 'infra/environments/local/infra-config/**'
+      - 'infra/test/verify-admission-control.sh'
+      - '.github/workflows/admission-control-ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-admission-control:
+    name: Verify Kyverno Admission Control & Pod Security Standards
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+
+      - name: Run 31-Check Admission Control Verification Suite
+        run: |
+          chmod +x ./infra/test/verify-admission-control.sh
+          ./infra/test/verify-admission-control.sh

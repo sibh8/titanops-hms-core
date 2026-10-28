@@ -147,3 +147,14 @@ module "external_secrets" {
   count  = local.features.external_secrets ? 1 : 0
   source = "../modules/external-secrets"
 }
+
+module "admission_control" {
+  count  = try(local.features.admission_control, false) ? 1 : 0
+  source = "../modules/admission-control"
+
+  name             = local.name
+  namespace        = "kyverno"
+  target_namespace = local.namespace
+  tags             = local.tags
+}
+

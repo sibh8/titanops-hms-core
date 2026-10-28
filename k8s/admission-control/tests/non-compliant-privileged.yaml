@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: non-compliant-privileged-app
+  namespace: hms
+  labels:
+    app: malicious-privileged-app
+    tier: non-compliant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: malicious-privileged-app
+  template:
+    metadata:
+      labels:
+        app: malicious-privileged-app
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+      containers:
+        - name: privileged-container
+          image: busybox:latest
+          command: ["sh", "-c", "sleep 3600"]
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            privileged: true
+            allowPrivilegeEscalation: true
+            capabilities:
+              add:
+                - SYS_ADMIN
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi

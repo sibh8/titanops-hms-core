@@ -1,0 +1,49 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-privilege-escalation
+  annotations:
+    policies.kyverno.io/title: Disallow Privilege Escalation & Privileged Containers
+    policies.kyverno.io/category: Pod Security Standards (Restricted)
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Privilege escalation allows a container process to gain more privileges than its
+      parent process. Privileged containers have root capabilities on the host. Both
+      must be explicitly disabled and all capabilities must be dropped.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: privilege-escalation-and-capabilities
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - DaemonSet
+                - StatefulSet
+                - Job
+                - CronJob
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kyverno
+      validate:
+        message: >-
+          validation failure: privilege escalation and privileged containers are strictly
+          forbidden. Containers must set allowPrivilegeEscalation: false and drop ALL capabilities.
+        pattern:
+          spec:
+            =(template):
+              spec:
+                containers:
+                  - securityContext:
+                      allowPrivilegeEscalation: false
+                      =(privileged): false
+                      capabilities:
+                        drop:
+                          - ALL

@@ -1,0 +1,50 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-resource-limits
+  annotations:
+    policies.kyverno.io/title: Require CPU and Memory Limits and Requests
+    policies.kyverno.io/category: Best Practices & Reliability
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      As application workloads share cluster resources, it is important to limit
+      resource usage. Pods running without CPU or memory requests and limits can
+      starve other workloads and trigger OOMKills.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: check-cpu-memory-limits-requests
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+                - Deployment
+                - DaemonSet
+                - StatefulSet
+                - Job
+                - CronJob
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kyverno
+      validate:
+        message: >-
+          validation failure: CPU and memory requests and limits are mandatory for all
+          containers to prevent noisy neighbor and resource starvation issues.
+        pattern:
+          spec:
+            =(template):
+              spec:
+                containers:
+                  - resources:
+                      requests:
+                        cpu: "?*"
+                        memory: "?*"
+                      limits:
+                        cpu: "?*"
+                        memory: "?*"

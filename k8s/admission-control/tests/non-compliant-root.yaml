@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: non-compliant-root-app
+  namespace: hms
+  labels:
+    app: malicious-root-app
+    tier: non-compliant
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: malicious-root-app
+  template:
+    metadata:
+      labels:
+        app: malicious-root-app
+    spec:
+      securityContext:
+        runAsNonRoot: false
+      containers:
+        - name: root-container
+          image: busybox:latest
+          command: ["sh", "-c", "whoami && sleep 3600"]
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
