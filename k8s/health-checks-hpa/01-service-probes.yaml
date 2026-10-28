@@ -1,0 +1,54 @@
+# ==============================================================================
+# TitanOps HMS: Kubernetes Liveness & Readiness Probes Specification - TITANOPS-37
+# ==============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: patient-service
+  namespace: titanops
+  labels:
+    app.kubernetes.io/name: patient-service
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: titanops-hms
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: patient-service
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: patient-service
+    spec:
+      containers:
+        - name: patient-service
+          image: ghcr.io/sibh8/titanops-hms-core/patient-service:latest
+          ports:
+            - name: http
+              containerPort: 8081
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          # ─── Liveness Probe: Self-healing container restart ─────────────────
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # ─── Readiness Probe: Ingress / Service traffic gate ────────────────
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 2

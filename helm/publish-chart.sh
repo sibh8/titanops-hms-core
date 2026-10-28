@@ -28,7 +28,11 @@
 # ============================================================================
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CHART_DIR="helm/titanops-base"
+if [[ ! -d "$CHART_DIR" && -d "$SCRIPT_DIR/titanops-base" ]]; then
+  CHART_DIR="$SCRIPT_DIR/titanops-base"
+fi
 CHART_NAME="titanops-base"
 DEFAULT_OUTPUT_DIR="dist/helm"
 

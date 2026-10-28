@@ -1,0 +1,43 @@
+# ==============================================================================
+# TitanOps HMS: Gitleaks Configuration & Secret Detection Rules - TITANOPS-113
+# ==============================================================================
+title = "TitanOps HMS Gitleaks Config"
+
+[extend]
+useDefault = true
+
+# ------------------------------------------------------------------------------
+# Allowlist: Legitimate false-positives and sample environment files
+# ------------------------------------------------------------------------------
+[allowlist]
+description = "Global allowlist for documentation, sample environment templates, and mock fixtures"
+paths = [
+  '''\.env\.example$''',
+  '''\.sandbox\.env\.sample$''',
+  '''LOCAL-SANDBOX-SETUP\.md$''',
+  '''docs/.*\.md$''',
+  '''k8s/.*\.yaml$''',
+  '''helm/.*\.yaml$''',
+  '''ansible/.*\.yml$'''
+]
+
+regexes = [
+  '''medicore_pass''',
+  '''root_pass''',
+  '''TitanOpsSecure2026!RDS'''
+]
+
+# ------------------------------------------------------------------------------
+# Custom Rules: AWS Access Keys & API Credentials Detection
+# ------------------------------------------------------------------------------
+[[rules]]
+id = "aws-access-key-id-custom"
+description = "Detected AWS Access Key ID"
+regex = '''(A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+tags = ["key", "AWS"]
+
+[[rules]]
+id = "aws-secret-access-key-custom"
+description = "Detected AWS Secret Access Key"
+regex = '''(?i)aws_(?:secret_access_key|secret_key|key)\s*(?:=|:)\s*["'\']?[0-9a-zA-Z/+]{40}["'\']?'''
+tags = ["key", "AWS"]
