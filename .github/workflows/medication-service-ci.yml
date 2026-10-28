@@ -31,7 +31,7 @@ jobs:
       image_tag: ${{ steps.gitversion.outputs.semVer }}
       git_sha: ${{ github.sha }}
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0
     - name: Set up JDK 11
