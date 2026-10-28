@@ -1,22 +1,8 @@
-# Default values for titanops-base.
-# This base chart serves as the common foundational abstraction for all MediCore HMS services.
-# Environment-specific overrides should be supplied via values-dev.yaml, values-staging.yaml, or values-prod.yaml.
-
-environment: "dev"
-replicaCount: 1
-
-image:
-  repository: ghcr.io/sibh8/titanops-hms-core/patient-service
-  pullPolicy: Always
-  # Overrides the image tag whose default is the chart appVersion.
-  tag: "latest"
-
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
-
+# Pod Security Standards (PSS) enforcement: keep workloads non-root, deny privilege escalation,
+# and reserve CPU/memory to satisfy cluster admission policies.
 serviceAccount:
   create: true
+  automount: true
   annotations: {}
   name: ""
 
@@ -39,8 +25,9 @@ securityContext:
 
 service:
   type: ClusterIP
-  port: 8080
-  targetPort: 8080
+  port: 80
+  targetPort: http
+  annotations: {}
 
 ingress:
   enabled: false
@@ -60,22 +47,6 @@ resources:
 autoscaling:
   enabled: false
   minReplicas: 1
-  maxReplicas: 5
+  maxReplicas: 100
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
-
-podDisruptionBudget:
-  enabled: false
-  minAvailable: 1
-
-nodeSelector: {}
-tolerations: []
-affinity: {}
-topologySpreadConstraints: []
-
-env: {}
-envFrom: []
-
-probes:
-  livenessPath: /actuator/health/liveness
-  readinessPath: /actuator/health/readiness
