@@ -60,3 +60,12 @@ envFrom: []
 probes:
   livenessPath: /actuator/health/liveness
   readinessPath: /actuator/health/readiness
+
+networkPolicy:
+  enabled: false
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress: []
+  egress: []
+

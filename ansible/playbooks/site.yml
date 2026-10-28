@@ -1,0 +1,25 @@
+---
+- name: TitanOps HMS - Cluster & Environment Configuration
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    target_env: "{{ env | default('dev') }}"
+    target_namespace: "{{ k8s_namespace | default('hms') }}"
+    cluster_name: "{{ eks_cluster_name | default('titanops-hms') }}"
+
+  roles:
+    - role: environment-config
+    - role: cis-hardening
+
+  post_tasks:
+    - name: Final configuration summary
+      ansible.builtin.debug:
+        msg:
+          - "=========================================================="
+          - "TitanOps Ansible Configuration Complete"
+          - "Target Environment : {{ target_env }}"
+          - "Namespace          : {{ target_namespace }}"
+          - "Status             : Ready for Helm application deployment"
+          - "=========================================================="

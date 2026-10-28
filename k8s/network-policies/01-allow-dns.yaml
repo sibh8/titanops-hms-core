@@ -1,0 +1,34 @@
+# Allow DNS resolution for all pods in the namespace to prevent startup/lookup failures.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: hms
+  labels:
+    app.kubernetes.io/part-of: medicore-hms
+    app.kubernetes.io/managed-by: titanops
+    security.titanops.io/policy-type: infrastructure-allow
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    # 1. Cluster CoreDNS in kube-system namespace
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchExpressions:
+              - key: k8s-app
+                operator: In
+                values: ["kube-dns", "coredns"]
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # 2. Node/VPC DNS resolver fallback on port 53
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

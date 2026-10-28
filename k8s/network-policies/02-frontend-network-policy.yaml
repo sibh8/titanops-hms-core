@@ -1,0 +1,84 @@
+# Frontend NetworkPolicy:
+# Ingress: Allow HTTP/HTTPS traffic from outside the cluster / ALB to frontend on port 80.
+# Egress: Allow egress strictly to the 9 backend microservices (ports 8081-8089) and OpenTelemetry (4318).
+# CRITICAL: Egress to MySQL/RDS on port 3306 is explicitly DENIED.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-network-policy
+  namespace: hms
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: medicore-hms
+    app.kubernetes.io/managed-by: titanops
+    security.titanops.io/tier: presentation
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/instance
+        operator: In
+        values: ["frontend", "medicore-hms-ui"]
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow incoming traffic from Ingress / ALB or any ingress controller
+    - ports:
+        - protocol: TCP
+          port: 80
+        - protocol: TCP
+          port: 8080
+  egress:
+    # 1. DNS egress
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # 2. Allow API reverse-proxy traffic ONLY to the 9 backend microservices
+    - to:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                  - patient-service
+                  - appointment-service
+                  - user-service
+                  - billing-service
+                  - encounter-service
+                  - lab-service
+                  - medication-service
+                  - prescription-service
+                  - provider-service
+      ports:
+        - protocol: TCP
+          port: 8081 # patient-service
+        - protocol: TCP
+          port: 8082 # appointment-service
+        - protocol: TCP
+          port: 8083 # user-service
+        - protocol: TCP
+          port: 8084 # billing-service
+        - protocol: TCP
+          port: 8085 # encounter-service
+        - protocol: TCP
+          port: 8086 # lab-service
+        - protocol: TCP
+          port: 8087 # medication-service
+        - protocol: TCP
+          port: 8088 # prescription-service
+        - protocol: TCP
+          port: 8089 # provider-service
+    # 3. Allow OpenTelemetry traces to otel-collector HTTP endpoint
+    - to:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values: ["otel-collector"]
+      ports:
+        - protocol: TCP
+          port: 4318
+    # NOTE: MySQL/RDS database port is deliberately NOT listed here.
+    # Any attempt by the frontend pod to connect to the database is denied by the CNI.
