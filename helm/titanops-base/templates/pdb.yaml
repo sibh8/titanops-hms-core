@@ -1,4 +1,4 @@
-{{- if .Values.podDisruptionBudget.enabled -}}
+{{- if and .Values.podDisruptionBudget .Values.podDisruptionBudget.enabled -}}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -6,10 +6,10 @@ metadata:
   labels:
     {{- include "titanops-base.labels" . | nindent 4 }}
 spec:
-  {{- if .Values.podDisruptionBudget.minAvailable }}
+  {{- if and .Values.podDisruptionBudget .Values.podDisruptionBudget.minAvailable }}
   minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
   {{- end }}
-  {{- if .Values.podDisruptionBudget.maxUnavailable }}
+  {{- if and .Values.podDisruptionBudget .Values.podDisruptionBudget.maxUnavailable }}
   maxUnavailable: {{ .Values.podDisruptionBudget.maxUnavailable }}
   {{- end }}
   selector:
