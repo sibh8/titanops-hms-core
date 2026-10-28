@@ -135,7 +135,7 @@ jobs:
 
       - name: Configure AWS credentials via OIDC
         if: steps.check-aws.outputs.aws_enabled == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION || 'ap-south-1' }}
@@ -246,7 +246,7 @@ jobs:
 
       - name: Configure AWS credentials via OIDC
         if: steps.check-cluster.outputs.deploy_live == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION || 'ap-south-1' }}
