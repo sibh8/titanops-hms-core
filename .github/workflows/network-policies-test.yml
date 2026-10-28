@@ -1,0 +1,61 @@
+name: Kubernetes NetworkPolicies Validation
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'k8s/network-policies/**'
+      - 'helm/**'
+      - '.github/workflows/network-policies-test.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'k8s/network-policies/**'
+      - 'helm/**'
+      - '.github/workflows/network-policies-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-network-policies:
+    name: Validate NetworkPolicies & Helm
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v7
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.30.0'
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'v3.15.0'
+
+      - name: Validate Kustomize and NetworkPolicy Manifests
+        run: |
+          echo "Running Kustomize build on k8s/network-policies..."
+          kubectl kustomize k8s/network-policies/
+
+      - name: Lint Base Helm Chart
+        run: |
+          echo "Linting helm/titanops-base..."
+          helm lint helm/titanops-base
+
+      - name: Validate Helm Templates for All 10 Services
+        run: |
+          for f in helm/values/*.yaml; do
+            svc=$(basename "$f" .yaml)
+            echo "Validating Helm template for $svc..."
+            helm template "$svc" helm/titanops-base -f "$f" >/dev/null
+          done
+
+      - name: Run Verification Suite (DoD Checks)
+        run: |
+          chmod +x k8s/network-policies/verify-network-policies.sh
+          ./k8s/network-policies/verify-network-policies.sh

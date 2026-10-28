@@ -1,0 +1,72 @@
+# Observability NetworkPolicy:
+# Regulates OpenTelemetry collector, Prometheus, and Jaeger traffic.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: observability-network-policy
+  namespace: hms
+  labels:
+    app.kubernetes.io/name: observability
+    app.kubernetes.io/part-of: medicore-hms
+    app.kubernetes.io/managed-by: titanops
+    security.titanops.io/tier: telemetry
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app.kubernetes.io/instance
+        operator: In
+        values: ["otel-collector", "jaeger", "prometheus"]
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # 1. OpenTelemetry gRPC on port 4317 from backend microservices
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                  - patient-service
+                  - appointment-service
+                  - user-service
+                  - billing-service
+                  - encounter-service
+                  - lab-service
+                  - medication-service
+                  - prescription-service
+                  - provider-service
+      ports:
+        - protocol: TCP
+          port: 4317
+    # 2. OpenTelemetry HTTP on port 4318 from frontend
+    - from:
+        - podSelector:
+            matchExpressions:
+              - key: app.kubernetes.io/instance
+                operator: In
+                values: ["frontend", "medicore-hms-ui"]
+      ports:
+        - protocol: TCP
+          port: 4318
+    # 3. Prometheus metrics scraper ports
+    - ports:
+        - protocol: TCP
+          port: 8888
+        - protocol: TCP
+          port: 8889
+        - protocol: TCP
+          port: 9090
+  egress:
+    # 1. DNS egress
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # 2. External OTLP / CloudWatch / AWS telemetry sinks
+    - ports:
+        - protocol: TCP
+          port: 443
+        - protocol: TCP
+          port: 14250

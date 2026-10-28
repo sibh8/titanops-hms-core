@@ -16,6 +16,12 @@ x-otel-env: &otel-env
 services:
 
   # ─── Database ──────────────────────────────────────────────────────────────
+  # TITANOPS-118 NOTE:
+  # This containerized MySQL service is strictly intended for local offline
+  # development, testing, and sandbox environments (docker-compose).
+  # In Kubernetes / AWS EKS production deployments, this container is NOT used;
+  # all 9 microservices connect directly to the managed, Multi-AZ, KMS-encrypted
+  # AWS RDS MySQL instance provisioned via Terraform (terraform/modules/rds).
   mysql:
     image: mysql:8.0
     container_name: medicore-mysql

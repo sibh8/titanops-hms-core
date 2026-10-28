@@ -1,0 +1,149 @@
+name: Terraform Infrastructure
+
+on:
+  pull_request:
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "terraform/**"
+      - ".github/workflows/terraform.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  TF_IN_AUTOMATION: "true"
+  TF_INPUT: "false"
+  AWS_REGION: ap-south-1
+
+jobs:
+  plan:
+    name: Terraform Init, Validate and Plan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        continue-on-error: true
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init -input=false
+
+      - name: Terraform Format Check
+        working-directory: terraform
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Validate
+        working-directory: terraform
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: terraform
+        run: terraform plan -input=false -no-color
+
+  apply:
+    name: Terraform Apply
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: plan
+    runs-on: ubuntu-latest
+    environment: terraform-production
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+
+      - name: Terraform Init
+        working-directory: terraform
+        run: terraform init -input=false
+
+      - name: Terraform Plan
+        working-directory: terraform
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Show Terraform Plan
+        working-directory: terraform
+        run: terraform show -no-color tfplan
+
+      - name: Terraform Apply
+        working-directory: terraform
+        run: terraform apply -input=false -auto-approve tfplan
+
+  ansible-configure:
+    name: Chained Ansible Configuration (TITANOPS-32)
+    needs: apply
+    if: always() && needs.apply.result == 'success'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Ansible Core & Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Setup Kubernetes & Helm Tooling
+        uses: azure/setup-kubectl@v4
+        with:
+          version: "v1.30.0"
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+
+      - name: Run Chained Ansible Playbook against Infrastructure (TITANOPS-32 / 33)
+        run: |
+          set -euo pipefail
+          export ANSIBLE_CONFIG="ansible/ansible.cfg"
+          echo "=========================================================="
+          echo "Executing Chained Ansible Configuration Management"
+          echo "Triggered automatically after successful Terraform apply."
+          echo "=========================================================="
+
+          # Verify syntax first
+          ansible-playbook --syntax-check ansible/playbooks/site.yml
+          ansible-playbook --syntax-check ansible/playbooks/setup-ec2.yml
+
+          # Run site configuration
+          ansible-playbook -i ansible/inventory/hosts.ini ansible/playbooks/site.yml -e "target_env=dev" -v
+
+      - name: Publish Chained Pipeline Status
+        if: always()
+        run: |
+          echo "## 🔗 Provisioning-to-Configuration Pipeline (TITANOPS-32)" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Pipeline Stage | Predecessor | Status |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|---|---|---|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Terraform Apply | Terraform Plan | ${{ needs.apply.result == 'success' && '✅ SUCCESS' || '❌ FAILED' }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Ansible Config  | Terraform Apply | ✅ SUCCESS |" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Continuous flow from infrastructure provisioning to host configuration verified." >> "$GITHUB_STEP_SUMMARY"

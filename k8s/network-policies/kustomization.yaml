@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: hms
+
+resources:
+  - 00-default-deny-all.yaml
+  - 01-allow-dns.yaml
+  - 02-frontend-network-policy.yaml
+  - 03-backend-services-network-policy.yaml
+  - 04-database-network-policy.yaml
+  - 05-observability-network-policy.yaml
