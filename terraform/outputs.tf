@@ -126,3 +126,17 @@ output "irsa_service_role_arns" {
   description = "Per-service IAM role ARNs for all 9 microservices"
   value       = module.irsa.service_role_arns
 }
+
+# ------------------------------------------------------------------------------
+# ECR Repositories (TITANOPS-68)
+# ------------------------------------------------------------------------------
+output "ecr_repository_urls" {
+  description = "ECR repository URLs for all 10 service images (9 microservices + frontend)"
+  value       = module.ecr.repository_urls
+}
+
+output "ecr_repository_arns" {
+  description = "ECR repository ARNs for IAM policies"
+  value       = module.ecr.repository_arns
+}
+

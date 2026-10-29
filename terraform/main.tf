@@ -81,3 +81,14 @@ module "irsa" {
   eks_oidc_issuer_url = module.eks.oidc_issuer
   aws_region          = var.aws_region
 }
+
+# ------------------------------------------------------------------------------
+# AWS ECR Repositories for 10 Services (TITANOPS-68)
+# ------------------------------------------------------------------------------
+module "ecr" {
+  source = "./modules/ecr"
+
+  project_name = var.project_name
+  environment  = var.environment
+}
+
