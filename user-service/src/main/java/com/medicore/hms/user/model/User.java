@@ -9,6 +9,9 @@ import javax.persistence.Column;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 import javax.persistence.PrePersist;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 import java.util.Date;
 
 @Entity
@@ -18,12 +21,18 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotBlank(message = "Username cannot be blank")
+    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
     @Column(unique = true, nullable = false)
     private String username;
 
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    @NotBlank(message = "Password cannot be blank")
+    @Size(min = 6, max = 100, message = "Password must be at least 6 characters")
     @Column(nullable = false)
     private String password;
+
+    @Pattern(regexp = "^(STAFF|ADMIN|NURSE|DOCTOR|PHARMACIST|BILLING)?$", message = "Role must be one of: STAFF, ADMIN, NURSE, DOCTOR, PHARMACIST, BILLING")
     private String role;
 
     @Temporal(TemporalType.TIMESTAMP)
