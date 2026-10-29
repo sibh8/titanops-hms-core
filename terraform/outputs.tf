@@ -163,4 +163,23 @@ output "cloudtrail_bucket_name" {
   value       = module.cloudtrail.cloudtrail_bucket_name
 }
 
+# ------------------------------------------------------------------------------
+# AWS Secrets Manager & External Secrets (TITANOPS-127 & TITANOPS-119)
+# ------------------------------------------------------------------------------
+output "secrets_db_secret_arn" {
+  description = "AWS Secrets Manager ARN for database credentials"
+  value       = module.secrets.db_secret_arn
+}
+
+output "secrets_grafana_secret_arn" {
+  description = "AWS Secrets Manager ARN for Grafana credentials"
+  value       = module.secrets.grafana_secret_arn
+}
+
+output "secrets_external_secrets_role_arn" {
+  description = "IAM IRSA Role ARN for External Secrets Operator"
+  value       = module.secrets.external_secrets_role_arn
+}
+
+
 

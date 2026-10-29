@@ -102,4 +102,22 @@ module "cloudtrail" {
   environment  = var.environment
 }
 
+# ------------------------------------------------------------------------------
+# AWS Secrets Manager & External Secrets Operator IRSA (TITANOPS-127 & TITANOPS-119)
+# ------------------------------------------------------------------------------
+module "secrets" {
+  source = "./modules/secrets"
+
+  project_name        = var.project_name
+  environment         = var.environment
+  database_name       = var.database_name
+  database_username   = var.database_username
+  database_endpoint   = module.rds.db_endpoint
+  kms_key_id          = module.rds.kms_key_arn
+  eks_oidc_issuer_url = module.eks.oidc_issuer
+  namespace           = var.kubernetes_namespace
+  aws_region          = var.aws_region
+}
+
+
 
