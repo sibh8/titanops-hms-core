@@ -110,4 +110,20 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+    @Autowired
+    private com.medicore.hms.user.security.LoginAttemptService loginAttemptService;
+
+    @PostMapping("/{username}/unlock")
+    @WithSpan("UserController.unlockUser")
+    public ResponseEntity<?> unlockUser(@PathVariable String username, javax.servlet.http.HttpServletRequest request) {
+        String role = (String) request.getAttribute("authenticatedRole");
+        if (role == null || !role.equalsIgnoreCase("ADMIN")) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(java.util.Map.of("error", "Forbidden", "message", "Admin role required to unlock accounts"));
+        }
+        loginAttemptService.unlockAccount(username);
+        log.info("Admin {} unlocked account for {}", request.getAttribute("authenticatedUser"), username);
+        return ResponseEntity.ok(java.util.Map.of("message", "Account successfully unlocked", "username", username));
+    }
 }
