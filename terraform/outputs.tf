@@ -225,6 +225,20 @@ output "fluent_bit_role_arn" {
   value       = module.logging.fluent_bit_role_arn
 }
 
+# ------------------------------------------------------------------------------
+# Threat Detection & Security Posture (TITANOPS-133)
+# ------------------------------------------------------------------------------
+output "guardduty_detector_id" {
+  description = "GuardDuty Detector ID with EKS Protection enabled"
+  value       = module.guardduty_securityhub.guardduty_detector_id
+}
+
+output "securityhub_subscription_arn" {
+  description = "Security Hub Foundational Best Practices subscription ARN"
+  value       = module.guardduty_securityhub.standards_subscription_arn
+}
+
+
 
 
 

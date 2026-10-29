@@ -152,6 +152,18 @@ module "logging" {
   eks_oidc_issuer_url = module.eks.oidc_issuer
 }
 
+# ------------------------------------------------------------------------------
+# Threat Detection & Security Posture: GuardDuty & Security Hub (TITANOPS-133)
+# ------------------------------------------------------------------------------
+module "guardduty_securityhub" {
+  source = "./modules/guardduty_securityhub"
+
+  project_name = var.project_name
+  environment  = var.environment
+  aws_region   = var.aws_region
+}
+
+
 
 
 
