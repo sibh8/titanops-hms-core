@@ -35,6 +35,7 @@ describe('User Service — CRUD', () => {
     assert.ok(body.id,                    'Response must include an id');
     assert.equal(body.username, PAYLOAD.username, 'username must match');
     assert.equal(body.email,    PAYLOAD.email,    'email must match');
+    assert.equal(body.password, undefined,        'password hash must NEVER be leaked in response');
     createdId = body.id;
   });
 
@@ -49,6 +50,7 @@ describe('User Service — CRUD', () => {
     const body = await api.get(`${BASE}/${createdId}`);
     assert.equal(body.id,       createdId,       'id must match');
     assert.equal(body.username, PAYLOAD.username, 'username must match');
+    assert.equal(body.password, undefined,        'password hash must NEVER be leaked in response');
   });
 
   it('GET /api/users/username/:username — retrieves by username', async () => {
