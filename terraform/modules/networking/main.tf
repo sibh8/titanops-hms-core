@@ -184,3 +184,69 @@ resource "aws_security_group" "eks_cluster" {
     Name = "${var.project_name}-eks-cluster-sg"
   })
 }
+
+# ------------------------------------------------------------------------------
+# VPC Flow Logs to CloudWatch (TITANOPS-122)
+# ------------------------------------------------------------------------------
+resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
+  count             = var.enable_vpc_flow_logs ? 1 : 0
+  name              = "/aws/vpc/${var.project_name}-${var.environment}-flow-logs"
+  retention_in_days = var.flow_logs_retention_days
+
+  tags = merge(local.common_tags, {
+    Name = "${var.project_name}-${var.environment}-vpc-flow-logs"
+  })
+}
+
+data "aws_iam_policy_document" "vpc_flow_logs_assume_role" {
+  count = var.enable_vpc_flow_logs ? 1 : 0
+  statement {
+    actions = ["sts:AssumeRole"]
+    principals {
+      type        = "Service"
+      identifiers = ["vpc-flow-logs.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "vpc_flow_logs" {
+  count              = var.enable_vpc_flow_logs ? 1 : 0
+  name               = "${var.project_name}-${var.environment}-vpc-flow-log-role"
+  assume_role_policy = data.aws_iam_policy_document.vpc_flow_logs_assume_role[0].json
+
+  tags = local.common_tags
+}
+
+resource "aws_iam_role_policy" "vpc_flow_logs" {
+  count = var.enable_vpc_flow_logs ? 1 : 0
+  name  = "${var.project_name}-${var.environment}-vpc-flow-log-policy"
+  role  = aws_iam_role.vpc_flow_logs[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams"
+        ]
+        Effect   = "Allow"
+        Resource = "${aws_cloudwatch_log_group.vpc_flow_logs[0].arn}:*"
+      }
+    ]
+  })
+}
+
+resource "aws_flow_log" "main" {
+  count           = var.enable_vpc_flow_logs ? 1 : 0
+  iam_role_arn    = aws_iam_role.vpc_flow_logs[0].arn
+  log_destination = aws_cloudwatch_log_group.vpc_flow_logs[0].arn
+  traffic_type    = "ALL"
+  vpc_id          = aws_vpc.main.id
+
+  tags = merge(local.common_tags, {
+    Name = "${var.project_name}-${var.environment}-flow-log"
+  })
+}

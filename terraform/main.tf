@@ -92,3 +92,14 @@ module "ecr" {
   environment  = var.environment
 }
 
+# ------------------------------------------------------------------------------
+# CloudTrail Security & Audit Trail (TITANOPS-122)
+# ------------------------------------------------------------------------------
+module "cloudtrail" {
+  source = "./modules/cloudtrail"
+
+  project_name = var.project_name
+  environment  = var.environment
+}
+
+

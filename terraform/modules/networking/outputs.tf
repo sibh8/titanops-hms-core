@@ -52,3 +52,17 @@ output "nat_gateway_id" {
   description = "NAT Gateway ID, or null if disabled"
   value       = var.enable_nat_gateway ? aws_nat_gateway.main[0].id : null
 }
+
+# ------------------------------------------------------------------------------
+# VPC Flow Logs (TITANOPS-122)
+# ------------------------------------------------------------------------------
+output "vpc_flow_log_id" {
+  description = "VPC Flow Log resource ID"
+  value       = var.enable_vpc_flow_logs ? aws_flow_log.main[0].id : null
+}
+
+output "vpc_flow_log_group_arn" {
+  description = "CloudWatch Log Group ARN for VPC Flow Logs"
+  value       = var.enable_vpc_flow_logs ? aws_cloudwatch_log_group.vpc_flow_logs[0].arn : null
+}
+
