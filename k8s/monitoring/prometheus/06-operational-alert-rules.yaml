@@ -1,0 +1,71 @@
+# ==============================================================================
+# TitanOps HMS: Operational Alert Rules Manifest (TITANOPS-42)
+# ==============================================================================
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: titanops-operational-alert-rules
+  namespace: monitoring
+  labels:
+    role: alert-rules
+    app.kubernetes.io/name: titanops-alerts
+    app.kubernetes.io/part-of: titanops-hms
+spec:
+  groups:
+    - name: titanops.operational.alerts
+      rules:
+        # ----------------------------------------------------------------------
+        # 1. Pod CrashLooping Detection
+        # ----------------------------------------------------------------------
+        - alert: PodCrashLooping
+          expr: rate(kube_pod_container_status_restarts_total[15m]) * 60 > 2
+          for: 2m
+          labels:
+            severity: critical
+            team: devops
+          annotations:
+            summary: "Pod {{ $labels.pod }} in {{ $labels.namespace }} is crashlooping"
+            description: "Container {{ $labels.container }} restarted more than 2 times in the last 15 minutes."
+            runbook_url: "https://docs.titanops.internal/runbooks/pod-crashloops"
+
+        # ----------------------------------------------------------------------
+        # 2. Microservice High 5xx Error Rate
+        # ----------------------------------------------------------------------
+        - alert: MicroserviceHigh5xxErrorRate
+          expr: (sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) by (service) / sum(rate(http_server_requests_seconds_count[5m])) by (service)) * 100 > 5
+          for: 3m
+          labels:
+            severity: critical
+            team: backend
+          annotations:
+            summary: "High 5xx error rate on {{ $labels.service }}"
+            description: "Service {{ $labels.service }} has over 5% HTTP 5xx server errors over the last 3 minutes."
+            runbook_url: "https://docs.titanops.internal/runbooks/service-5xx-spikes"
+
+        # ----------------------------------------------------------------------
+        # 3. Kubernetes Node Memory Pressure
+        # ----------------------------------------------------------------------
+        - alert: KubernetesNodeMemoryPressure
+          expr: (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) < 0.10
+          for: 5m
+          labels:
+            severity: warning
+            team: infra
+          annotations:
+            summary: "Node {{ $labels.instance }} memory available is below 10%"
+            description: "Available physical memory on worker node {{ $labels.instance }} is critically low."
+            runbook_url: "https://docs.titanops.internal/runbooks/node-memory-pressure"
+
+        # ----------------------------------------------------------------------
+        # 4. Failed Deployment Rollout / Unavailable Replicas
+        # ----------------------------------------------------------------------
+        - alert: FailedDeploymentRollout
+          expr: kube_deployment_status_replicas_unavailable{namespace=~"hms|monitoring"} > 0
+          for: 10m
+          labels:
+            severity: critical
+            team: devops
+          annotations:
+            summary: "Deployment {{ $labels.deployment }} has unavailable replicas"
+            description: "Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} has unavailable replicas for over 10 minutes."
+            runbook_url: "https://docs.titanops.internal/runbooks/deployment-rollout-failures"

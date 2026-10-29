@@ -50,3 +50,20 @@ jobs:
           else
             echo "Pushgateway not directly reachable from public runner; metrics logged locally."
           fi
+
+      - name: Dispatch Slack & Email Notification on CI/CD Failure
+        if: failure() || github.event.workflow_run.conclusion == 'failure'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name || 'manual-trigger' }}
+          RUN_ID: ${{ github.event.workflow_run.id || github.run_id }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          echo "ALERT: Workflow ${WORKFLOW_NAME} failed!"
+          PAYLOAD="{\"text\": \"🚨 *GitHub Actions Pipeline Failure Alert*\n*Workflow:* ${WORKFLOW_NAME}\n*Run ID:* ${RUN_ID}\n*Commit:* \`${COMMIT_SHA}\`\n*Status:* FAILED\"}"
+          if [ -n "${SLACK_WEBHOOK_URL:-}" ]; then
+            curl -s -X POST -H 'Content-type: application/json' --data "${PAYLOAD}" "${SLACK_WEBHOOK_URL}"
+            echo "Failure notification dispatched to Slack"
+          else
+            echo "Notification simulated: ${PAYLOAD}"
+          fi
