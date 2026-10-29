@@ -1,3 +1,35 @@
+{{- $targetServices := dict }}
+{{- if .Values.services }}
+  {{- if hasKey .Values.services .Release.Name }}
+    {{- $_ := set $targetServices .Release.Name (get .Values.services .Release.Name) }}
+  {{- else }}
+    {{- $targetServices = .Values.services }}
+  {{- end }}
+{{- end }}
+
+{{- if $targetServices }}
+{{- $root := . }}
+{{- range $name, $svc := $targetServices }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/instance: {{ $root.Release.Name }}
+    app.kubernetes.io/part-of: titanops-hms
+spec:
+  type: {{ $svc.serviceType | default "ClusterIP" }}
+  ports:
+    - name: http
+      port: {{ $svc.port }}
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: {{ $name }}
+{{- end }}
+{{- else }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -13,3 +45,4 @@ spec:
       name: http
   selector:
     {{- include "titanops-base.selectorLabels" . | nindent 4 }}
+{{- end }}

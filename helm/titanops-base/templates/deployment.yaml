@@ -1,3 +1,104 @@
+{{- $targetServices := dict }}
+{{- if .Values.services }}
+  {{- if hasKey .Values.services .Release.Name }}
+    {{- $_ := set $targetServices .Release.Name (get .Values.services .Release.Name) }}
+  {{- else }}
+    {{- $targetServices = .Values.services }}
+  {{- end }}
+{{- end }}
+
+{{- if $targetServices }}
+{{- $root := . }}
+{{- range $name, $svc := $targetServices }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/instance: {{ $root.Release.Name }}
+    app.kubernetes.io/part-of: titanops-hms
+    {{- if $root.Values.environment }}
+    app.kubernetes.io/environment: {{ $root.Values.environment | quote }}
+    {{- end }}
+spec:
+  {{- if not (and $root.Values.autoscaling $root.Values.autoscaling.enabled) }}
+  replicas: {{ $svc.replicaCount | default $root.Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ $name }}
+        app.kubernetes.io/instance: {{ $root.Release.Name }}
+        app.kubernetes.io/part-of: titanops-hms
+        {{- if $root.Values.environment }}
+        app.kubernetes.io/environment: {{ $root.Values.environment | quote }}
+        {{- end }}
+    spec:
+      serviceAccountName: {{ $svc.serviceAccountName | default (printf "%s-sa" $name) }}
+      securityContext:
+        {{- toYaml ($svc.podSecurityContext | default $root.Values.podSecurityContext) | nindent 8 }}
+      containers:
+        - name: {{ $name }}
+          securityContext:
+            {{- toYaml ($svc.securityContext | default $root.Values.securityContext) | nindent 12 }}
+          image: "{{ or $svc.image.repository $root.Values.image.repository }}:{{ or $root.Values.image.tag $svc.image.tag "latest" }}"
+          imagePullPolicy: {{ $svc.image.pullPolicy | default $root.Values.image.pullPolicy | default "IfNotPresent" }}
+          ports:
+            - name: http
+              containerPort: {{ $svc.port }}
+              protocol: TCP
+          env:
+            {{- range $k, $v := $root.Values.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- range $k, $v := $svc.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          {{- if or $svc.envFrom $root.Values.envFrom }}
+          envFrom:
+            {{- toYaml ($svc.envFrom | default $root.Values.envFrom) | nindent 12 }}
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: {{ $svc.probes.livenessPath | default "/actuator/health/liveness" }}
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: {{ $svc.probes.readinessPath | default "/actuator/health/readiness" }}
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            {{- toYaml ($svc.resources | default $root.Values.resources) | nindent 12 }}
+          volumeMounts:
+            - name: tmp-dir
+              mountPath: /tmp
+      volumes:
+        - name: tmp-dir
+          emptyDir: {}
+      {{- with (or $svc.affinity $root.Values.affinity) }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (or $svc.tolerations $root.Values.tolerations) }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (or $svc.topologySpreadConstraints $root.Values.topologySpreadConstraints) }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}
+{{- else }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -79,3 +180,4 @@ spec:
       topologySpreadConstraints:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+{{- end }}

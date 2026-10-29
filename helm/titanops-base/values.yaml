@@ -92,3 +92,175 @@ networkPolicy:
     - Egress
   ingress: []
   egress: []
+
+# ==============================================================================
+# Multi-Workload Definitions for all 10 Services (TITANOPS-72)
+# Enumerates all 9 Spring Boot microservices + React/Vite frontend
+# ==============================================================================
+services:
+  patient-service:
+    port: 8081
+    image:
+      repository: medicore/patient-service
+      tag: latest
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_SERVICE_NAME: "patient-service"
+    envFrom:
+      - secretRef:
+          name: titanops-datasource-credentials
+    probes:
+      livenessPath: /actuator/health/liveness
+      readinessPath: /actuator/health/readiness
+
+  appointment-service:
+    port: 8082
+    image:
+      repository: medicore/appointment-service
+      tag: latest
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_SERVICE_NAME: "appointment-service"
+    envFrom:
+      - secretRef:
+          name: titanops-datasource-credentials
+    probes:
+      livenessPath: /actuator/health/liveness
+      readinessPath: /actuator/health/readiness
+
+  user-service:
+    port: 8083
+    image:
+      repository: medicore/user-service
+      tag: latest
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_SERVICE_NAME: "user-service"
+    envFrom:
+      - secretRef:
+          name: titanops-datasource-credentials
+    probes:
+      livenessPath: /actuator/health/liveness
+      readinessPath: /actuator/health/readiness
+
+  billing-service:
+    port: 8084
+    image:
+      repository: medicore/billing-service
+      tag: latest
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_SERVICE_NAME: "billing-service"
+    envFrom:
+      - secretRef:
+          name: titanops-datasource-credentials
+    probes:
+      livenessPath: /actuator/health/liveness
+      readinessPath: /actuator/health/readiness
+
+  encounter-service:
+    port: 8085
+    image:
+      repository: medicore/encounter-service
+      tag: latest
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_SERVICE_NAME: "encounter-service"
+    envFrom:
+      - secretRef:
+          name: titanops-datasource-credentials
+    probes:
+      livenessPath: /actuator/health/liveness
+      readinessPath: /actuator/health/readiness
+
+  lab-service:
+    port: 8086
+    image:
+      repository: medicore/lab-service
+      tag: latest
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_SERVICE_NAME: "lab-service"
+    envFrom:
+      - secretRef:
+          name: titanops-datasource-credentials
+    probes:
+      livenessPath: /actuator/health/liveness
+      readinessPath: /actuator/health/readiness
+
+  medication-service:
+    port: 8087
+    image:
+      repository: medicore/medication-service
+      tag: latest
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_SERVICE_NAME: "medication-service"
+    envFrom:
+      - secretRef:
+          name: titanops-datasource-credentials
+    probes:
+      livenessPath: /actuator/health/liveness
+      readinessPath: /actuator/health/readiness
+
+  prescription-service:
+    port: 8088
+    image:
+      repository: medicore/prescription-service
+      tag: latest
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_SERVICE_NAME: "prescription-service"
+    envFrom:
+      - secretRef:
+          name: titanops-datasource-credentials
+    probes:
+      livenessPath: /actuator/health/liveness
+      readinessPath: /actuator/health/readiness
+
+  provider-service:
+    port: 8089
+    image:
+      repository: medicore/provider-service
+      tag: latest
+    env:
+      OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
+      OTEL_SERVICE_NAME: "provider-service"
+    envFrom:
+      - secretRef:
+          name: titanops-datasource-credentials
+    probes:
+      livenessPath: /actuator/health/liveness
+      readinessPath: /actuator/health/readiness
+
+  frontend:
+    port: 80
+    serviceType: LoadBalancer
+    image:
+      repository: medicore/frontend
+      tag: latest
+    podSecurityContext:
+      runAsNonRoot: true
+      runAsUser: 101
+      fsGroup: 101
+      seccompProfile:
+        type: RuntimeDefault
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 101
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+      capabilities:
+        drop:
+          - ALL
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
+    probes:
+      livenessPath: /health
+      readinessPath: /health
+
