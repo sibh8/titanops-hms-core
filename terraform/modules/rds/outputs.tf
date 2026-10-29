@@ -51,3 +51,9 @@ output "multi_az_enabled" {
   description = "Whether Multi-AZ redundancy is active on the database instance"
   value       = aws_db_instance.this.multi_az
 }
+
+output "jdbc_connection_url" {
+  description = "Standard JDBC formatted connection URL for Spring Boot microservices"
+  value       = "jdbc:mysql://${aws_db_instance.this.endpoint}/${aws_db_instance.this.db_name}?useSSL=true&requireSSL=true&verifyServerCertificate=false&allowPublicKeyRetrieval=true"
+}
+

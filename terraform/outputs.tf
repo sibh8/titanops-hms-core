@@ -109,6 +109,11 @@ output "rds_multi_az_enabled" {
   value       = module.rds.multi_az_enabled
 }
 
+output "rds_jdbc_connection_url" {
+  description = "JDBC connection URL for Spring Boot microservices datasource configuration"
+  value       = module.rds.jdbc_connection_url
+}
+
 # ------------------------------------------------------------------------------
 # IRSA Service Roles (TITANOPS-120)
 # ------------------------------------------------------------------------------
