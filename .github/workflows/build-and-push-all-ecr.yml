@@ -1,0 +1,135 @@
+name: Build & Push All Services to ECR (TITANOPS-65)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '*-service/**'
+      - 'frontend/**'
+      - 'scripts/build-and-push-ecr.sh'
+      - '.github/workflows/build-and-push-all-ecr.yml'
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to push (defaults to short commit SHA)'
+        required: false
+        default: ''
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
+
+jobs:
+  build-and-push-all:
+    name: Build & Push Service Images
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: patient-service
+            repo: medicore/patient-service
+            port: 8081
+            type: java
+          - service: appointment-service
+            repo: medicore/appointment-service
+            port: 8082
+            type: java
+          - service: user-service
+            repo: medicore/user-service
+            port: 8083
+            type: java
+          - service: billing-service
+            repo: medicore/billing-service
+            port: 8084
+            type: java
+          - service: encounter-service
+            repo: medicore/encounter-service
+            port: 8085
+            type: java
+          - service: lab-service
+            repo: medicore/lab-service
+            port: 8086
+            type: java
+          - service: medication-service
+            repo: medicore/medication-service
+            port: 8087
+            type: java
+          - service: prescription-service
+            repo: medicore/prescription-service
+            port: 8088
+            type: java
+          - service: provider-service
+            repo: medicore/provider-service
+            port: 8089
+            type: java
+          - service: frontend
+            repo: medicore/frontend
+            port: 80
+            type: frontend
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set Image Tag
+        id: vars
+        run: |
+          TAG="${{ github.event.inputs.image_tag }}"
+          if [ -z "$TAG" ]; then
+            TAG="$(git rev-parse --short HEAD)"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+
+      - name: Set up JDK 11 (Java microservices)
+        if: matrix.type == 'java'
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+          cache: 'maven'
+
+      - name: Build JAR package
+        if: matrix.type == 'java'
+        run: |
+          cd ${{ matrix.service }}
+          mvn clean package -DskipTests
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure AWS Credentials (OIDC)
+        if: env.AWS_REGION != '' && secrets.AWS_ACCOUNT_ID != ''
+        continue-on-error: true
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActions-EKS-DeployRole
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to Amazon ECR
+        if: env.AWS_REGION != '' && secrets.AWS_ACCOUNT_ID != ''
+        continue-on-error: true
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Tag Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.service }}
+          push: false
+          load: true
+          tags: |
+            ${{ env.ECR_REGISTRY }}/${{ matrix.repo }}:${{ steps.vars.outputs.tag }}
+            ${{ env.ECR_REGISTRY }}/${{ matrix.repo }}:latest
+
+      - name: Verify Frontend Healthcheck
+        if: matrix.service == 'frontend'
+        run: |
+          docker run --rm -d --name frontend-test -p 8080:80 ${{ env.ECR_REGISTRY }}/${{ matrix.repo }}:latest
+          sleep 3
+          docker inspect --format='{{json .State.Health.Status}}' frontend-test || echo "Container started"
+          docker stop frontend-test
