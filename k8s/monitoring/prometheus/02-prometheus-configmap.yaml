@@ -19,6 +19,11 @@ data:
     rule_files:
       - /etc/prometheus/rules/*.yaml
 
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: ['alertmanager.monitoring.svc.cluster.local:9093']
+
     scrape_configs:
       # ------------------------------------------------------------------------
       # Self Monitoring
