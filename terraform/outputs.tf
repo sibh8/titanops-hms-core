@@ -207,6 +207,25 @@ output "waf_log_group_arn" {
   value       = module.waf.log_group_arn
 }
 
+# ------------------------------------------------------------------------------
+# Centralized Logging (TITANOPS-132)
+# ------------------------------------------------------------------------------
+output "application_log_group_name" {
+  description = "CloudWatch Log Group name for container logs"
+  value       = module.logging.application_log_group_name
+}
+
+output "application_log_group_arn" {
+  description = "CloudWatch Log Group ARN for container logs"
+  value       = module.logging.application_log_group_arn
+}
+
+output "fluent_bit_role_arn" {
+  description = "IAM IRSA Role ARN for Fluent Bit log forwarder"
+  value       = module.logging.fluent_bit_role_arn
+}
+
+
 
 
 
