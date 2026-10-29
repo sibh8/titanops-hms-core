@@ -134,3 +134,74 @@ resource "aws_iam_role_policy_attachment" "external_secrets" {
   role       = aws_iam_role.external_secrets.name
   policy_arn = aws_iam_policy.external_secrets.arn
 }
+
+# ------------------------------------------------------------------------------
+# Secrets Manager: Automated Database Credential Rotation (TITANOPS-119)
+# ------------------------------------------------------------------------------
+resource "aws_iam_role" "db_rotation" {
+  name        = "${var.project_name}-${var.environment}-db-secret-rotation-role"
+  description = "IAM role for AWS Secrets Manager automated database credential rotation"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-db-secret-rotation-role"
+    Project     = var.project_name
+    Environment = var.environment
+    ManagedBy   = "Terraform"
+  }
+}
+
+resource "aws_iam_policy" "db_rotation" {
+  name        = "${var.project_name}-${var.environment}-db-secret-rotation-policy"
+  description = "Permissions for database credential rotation in Secrets Manager"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:PutSecretValue",
+          "secretsmanager:UpdateSecretVersionStage"
+        ]
+        Resource = aws_secretsmanager_secret.database.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetRandomPassword"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "db_rotation" {
+  role       = aws_iam_role.db_rotation.name
+  policy_arn = aws_iam_policy.db_rotation.arn
+}
+
+resource "aws_secretsmanager_secret_rotation" "database" {
+  secret_id           = aws_secretsmanager_secret.database.id
+  rotation_lambda_arn = var.rotation_lambda_arn != "" ? var.rotation_lambda_arn : "arn:aws:lambda:${var.aws_region}:123456789012:function:${var.project_name}-${var.environment}-rds-rotation"
+
+  rotation_rules {
+    automatically_after_days = var.rotation_interval_days
+  }
+}
+

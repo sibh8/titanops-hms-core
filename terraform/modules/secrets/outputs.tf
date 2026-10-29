@@ -26,3 +26,9 @@ output "external_secrets_role_arn" {
   description = "IAM IRSA Role ARN assumed by External Secrets Operator"
   value       = aws_iam_role.external_secrets.arn
 }
+
+output "db_secret_rotation_role_arn" {
+  description = "IAM Role ARN for AWS Secrets Manager database rotation"
+  value       = aws_iam_role.db_rotation.arn
+}
+
