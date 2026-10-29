@@ -41,6 +41,26 @@ prometheus:
       runAsUser: 65534
       runAsNonRoot: true
       fsGroup: 65534
+    additionalScrapeConfigs:
+      - job_name: 'titanops-microservices-sd'
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - hms
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: (patient|user|appointment|provider|encounter|billing|lab|medication|prescription)-service
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: http
+          - target_label: __metrics_path__
+            replacement: /actuator/prometheus
+          - source_labels: [__meta_kubernetes_service_name]
+            target_label: app
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
 
 nodeExporter:
   enabled: true
