@@ -1,4 +1,35 @@
-{{- if and .Values.podDisruptionBudget .Values.podDisruptionBudget.enabled -}}
+{{- $targetServices := dict }}
+{{- if .Values.services }}
+  {{- if hasKey .Values.services .Release.Name }}
+    {{- $_ := set $targetServices .Release.Name (get .Values.services .Release.Name) }}
+  {{- else }}
+    {{- $targetServices = .Values.services }}
+  {{- end }}
+{{- end }}
+
+{{- if and $targetServices (and .Values.podDisruptionBudget .Values.podDisruptionBudget.enabled) }}
+{{- $root := . }}
+{{- range $name, $svc := $targetServices }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $name }}-pdb
+  labels:
+    app.kubernetes.io/name: {{ $name }}
+    app.kubernetes.io/instance: {{ $root.Release.Name }}
+spec:
+  {{- if $root.Values.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ $root.Values.podDisruptionBudget.minAvailable }}
+  {{- end }}
+  {{- if $root.Values.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ $root.Values.podDisruptionBudget.maxUnavailable }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $name }}
+{{- end }}
+{{- else if and .Values.podDisruptionBudget .Values.podDisruptionBudget.enabled }}
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
