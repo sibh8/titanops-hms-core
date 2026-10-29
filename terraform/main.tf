@@ -163,6 +163,17 @@ module "guardduty_securityhub" {
   aws_region   = var.aws_region
 }
 
+# ------------------------------------------------------------------------------
+# Automated Alerting for Security Events (TITANOPS-134)
+# ------------------------------------------------------------------------------
+module "security_alerts" {
+  source = "./modules/security_alerts"
+
+  project_name = var.project_name
+  environment  = var.environment
+}
+
+
 
 
 

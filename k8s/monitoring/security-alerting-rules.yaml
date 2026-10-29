@@ -1,0 +1,76 @@
+# ==============================================================================
+# TitanOps HMS: In-Cluster Security Event Alerting Rules
+# Ticket: TITANOPS-134: Add alerting for security events
+# ==============================================================================
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: titanops-security-alert-rules
+  namespace: monitoring
+  labels:
+    role: alert-rules
+    app.kubernetes.io/name: titanops-security-alerts
+    app.kubernetes.io/part-of: titanops-hms
+spec:
+  groups:
+    - name: titanops.security.alerts
+      rules:
+        # ----------------------------------------------------------------------
+        # High Rate of HTTP 401 / 403 Authentication Failures
+        # ----------------------------------------------------------------------
+        - alert: HighAuthFailureRate
+          expr: sum(rate(nginx_ingress_controller_requests{status=~"401|403"}[5m])) by (ingress) > 5
+          for: 2m
+          labels:
+            severity: critical
+            team: security
+            service: ingress-gateway
+          annotations:
+            summary: "Elevated authentication/authorization failures on {{ $labels.ingress }}"
+            description: "Over 5 req/s returning 401/403 over the last 2 minutes on {{ $labels.ingress }}. Potential brute-force or credential stuffing detected."
+            runbook_url: "https://docs.titanops.internal/runbooks/security-auth-spikes"
+
+        # ----------------------------------------------------------------------
+        # WAF Block Spike (In-Cluster Nginx / ModSecurity / AWS WAF Metric)
+        # ----------------------------------------------------------------------
+        - alert: WAFBlockRateSpike
+          expr: sum(rate(aws_wafv2_blocked_requests_sum[5m])) > 10
+          for: 1m
+          labels:
+            severity: high
+            team: security
+            component: waf
+          annotations:
+            summary: "High volume of requests blocked by AWS WAF"
+            description: "AWS WAF block rate exceeds 10 blocked req/s over 1 minute. Possible automated exploit attempt (SQLi, XSS, or LFI probe)."
+            runbook_url: "https://docs.titanops.internal/runbooks/security-waf-alerts"
+
+        # ----------------------------------------------------------------------
+        # Privileged Container / Unexpected Pod Root Execution
+        # ----------------------------------------------------------------------
+        - alert: ContainerRunningAsRoot
+          expr: count by (namespace, pod, container) (kube_pod_container_status_running{namespace=~"titanops-.*"} * on(namespace, pod, container) group_left() (kube_pod_container_info{container!~"istio-proxy|vault-agent"} and kube_pod_container_security_context{run_as_user="0"})) > 0
+          for: 5m
+          labels:
+            severity: high
+            team: security
+            component: runtime-security
+          annotations:
+            summary: "Container running as root UID 0 in namespace {{ $labels.namespace }}"
+            description: "Container {{ $labels.container }} in pod {{ $labels.pod }} is running as root (UID 0), violating TitanOps security standard."
+            runbook_url: "https://docs.titanops.internal/runbooks/security-non-root"
+
+        # ----------------------------------------------------------------------
+        # Excessive Kubernetes RBAC Unauthorized Access Attempts
+        # ----------------------------------------------------------------------
+        - alert: ExcessiveKubeApiDeniedRequests
+          expr: sum(rate(apiserver_request_total{code="403"}[5m])) > 2
+          for: 3m
+          labels:
+            severity: warning
+            team: security
+            component: kubernetes-api
+          annotations:
+            summary: "Spike in Kubernetes API server 403 Forbidden responses"
+            description: "Kubernetes API server 403 authorization rejections exceed 2 req/s for 3 minutes. Potential service account compromise or misconfiguration."
+            runbook_url: "https://docs.titanops.internal/runbooks/security-rbac-denials"
