@@ -8,3 +8,4 @@ resources:
   - 02-grafana-deployment.yaml
   - 03-grafana-service.yaml
   - 04-grafana-dashboards.yaml
+  - 05-imported-dashboards-configmap.yaml

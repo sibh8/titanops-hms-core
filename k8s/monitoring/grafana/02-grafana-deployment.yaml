@@ -94,6 +94,6 @@ spec:
             name: grafana-dashboard-providers
         - name: dashboards-volume
           configMap:
-            name: grafana-dashboards-app-health
+            name: grafana-dashboards-imported
         - name: storage-volume
           emptyDir: {}
