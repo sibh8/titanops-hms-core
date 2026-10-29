@@ -1,0 +1,14 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: patient-service-pdb
+  namespace: hms
+  labels:
+    app.kubernetes.io/name: patient-service
+    app.kubernetes.io/part-of: titanops-hms
+    app.kubernetes.io/component: high-availability
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: patient-service
