@@ -24,7 +24,9 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const res = await userApi.login(form.username, form.password);
-      login(res.data, null);
+      const token = res.data.token || null;
+      const userData = res.data.user || res.data;
+      login(userData, token);
       navigate('/');
     } catch (err) {
       if (err.response?.status === 401 || err.response?.status === 404) {

@@ -1,6 +1,7 @@
 package com.medicore.hms.user.controller;
 
 import com.medicore.hms.user.model.User;
+import com.medicore.hms.user.security.JwtUtil;
 import com.medicore.hms.user.service.UserService;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.slf4j.Logger;
@@ -10,13 +11,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 /**
  * Dedicated auth endpoints:
  *   POST /api/auth/register  – register a new user (hashes password, checks duplicate)
- *   POST /api/auth/login     – validate credentials, return user on success
+ *   POST /api/auth/login     – validate credentials, return JWT token and user profile
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -26,6 +28,9 @@ public class AuthController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     // ─── Register ────────────────────────────────────────────────────────────
 
@@ -60,7 +65,7 @@ public class AuthController {
 
     @PostMapping("/login")
     @WithSpan("AuthController.login")
-    public ResponseEntity<User> login(@RequestBody Map<String, String> credentials) {
+    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
         String username = credentials.get("username");
         String password = credentials.get("password");
         log.info("POST /api/auth/login username={}", username);
@@ -70,8 +75,21 @@ public class AuthController {
         try {
             Optional<User> user = userService.loginUser(username, password);
             if (user.isPresent()) {
-                log.info("POST /api/auth/login -> 200 id={}", user.get().getId());
-                return ResponseEntity.ok(user.get());
+                User u = user.get();
+                String token = jwtUtil.generateToken(u.getId(), u.getUsername(), u.getRole());
+                log.info("POST /api/auth/login -> 200 id={} tokenIssued=true", u.getId());
+
+                Map<String, Object> response = new HashMap<>();
+                response.put("token", token);
+                response.put("type", "Bearer");
+                response.put("expiresIn", 86400);
+                response.put("user", u);
+                // Top-level fields for maximum compatibility
+                response.put("id", u.getId());
+                response.put("username", u.getUsername());
+                response.put("role", u.getRole());
+
+                return ResponseEntity.ok(response);
             }
             log.warn("POST /api/auth/login -> 401 invalid credentials for username={}", username);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
