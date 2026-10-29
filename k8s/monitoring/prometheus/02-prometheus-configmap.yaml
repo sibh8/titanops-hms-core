@@ -186,3 +186,15 @@ data:
         metrics_path: '/actuator/prometheus'
         static_configs:
           - targets: ['prescription-service.hms.svc.cluster.local:8089']
+
+      # ------------------------------------------------------------------------
+      # GitHub Actions CI/CD Pipeline Health Telemetry (TITANOPS-41)
+      # ------------------------------------------------------------------------
+      - job_name: 'github-actions-exporter'
+        static_configs:
+          - targets: ['github-actions-exporter.monitoring.svc.cluster.local:9999']
+
+      - job_name: 'pushgateway'
+        honor_labels: true
+        static_configs:
+          - targets: ['pushgateway.monitoring.svc.cluster.local:9091']

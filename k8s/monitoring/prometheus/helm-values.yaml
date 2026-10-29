@@ -61,6 +61,13 @@ prometheus:
             target_label: app
           - source_labels: [__meta_kubernetes_namespace]
             target_label: namespace
+      - job_name: 'github-actions-exporter'
+        static_configs:
+          - targets: ['github-actions-exporter.monitoring.svc.cluster.local:9999']
+      - job_name: 'pushgateway'
+        honor_labels: true
+        static_configs:
+          - targets: ['pushgateway.monitoring.svc.cluster.local:9091']
 
 nodeExporter:
   enabled: true
