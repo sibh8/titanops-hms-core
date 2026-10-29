@@ -1,0 +1,64 @@
+# ==============================================================================
+# TitanOps HMS: kube-prometheus-stack Helm Chart Values (TITANOPS-39)
+# ==============================================================================
+fullnameOverride: prometheus-stack
+
+defaultRules:
+  create: true
+  rules:
+    alertmanager: true
+    etcd: false
+    k8s: true
+    kubeApiserver: true
+    kubePrometheusNodeAlerting: true
+    network: true
+    node: true
+    prometheus: true
+
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    retention: 15d
+    retentionSize: "25Gi"
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 30Gi
+    securityContext:
+      runAsUser: 65534
+      runAsNonRoot: true
+      fsGroup: 65534
+
+nodeExporter:
+  enabled: true
+  tolerations:
+    - effect: NoSchedule
+      operator: Exists
+
+kubeStateMetrics:
+  enabled: true
+
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    retention: 120h
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
