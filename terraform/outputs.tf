@@ -194,6 +194,20 @@ output "aws_load_balancer_controller_role_arn" {
   value       = module.ingress.load_balancer_controller_role_arn
 }
 
+# ------------------------------------------------------------------------------
+# AWS WAFv2 Protection (TITANOPS-129)
+# ------------------------------------------------------------------------------
+output "waf_web_acl_arn" {
+  description = "ARN of the AWS WAFv2 WebACL attached to ALB"
+  value       = module.waf.web_acl_arn
+}
+
+output "waf_log_group_arn" {
+  description = "ARN of CloudWatch Log Group capturing WAF logs"
+  value       = module.waf.log_group_arn
+}
+
+
 
 
 

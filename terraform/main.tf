@@ -130,6 +130,17 @@ module "ingress" {
   eks_oidc_issuer_url = module.eks.oidc_issuer
 }
 
+# ------------------------------------------------------------------------------
+# AWS WAFv2 Protection for Public ALB (TITANOPS-129)
+# ------------------------------------------------------------------------------
+module "waf" {
+  source = "./modules/waf"
+
+  project_name = var.project_name
+  environment  = var.environment
+}
+
+
 
 
 
