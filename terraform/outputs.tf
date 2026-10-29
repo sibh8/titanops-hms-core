@@ -238,6 +238,20 @@ output "securityhub_subscription_arn" {
   value       = module.guardduty_securityhub.standards_subscription_arn
 }
 
+# ------------------------------------------------------------------------------
+# Security Event Alerting (TITANOPS-134)
+# ------------------------------------------------------------------------------
+output "security_alerts_topic_arn" {
+  description = "ARN of the SNS topic receiving security event notifications"
+  value       = module.security_alerts.security_alerts_sns_topic_arn
+}
+
+output "auth_failure_alarm_arn" {
+  description = "ARN of CloudWatch alarm for authentication failure spikes"
+  value       = module.security_alerts.auth_failure_alarm_arn
+}
+
+
 
 
 
