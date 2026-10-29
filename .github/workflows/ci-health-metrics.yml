@@ -1,0 +1,52 @@
+name: CI/CD Pipeline Health Telemetry
+
+on:
+  workflow_run:
+    workflows: ["*"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  export-telemetry:
+    name: Push Workflow Run Telemetry to Prometheus
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate and Push Pipeline Run Metrics
+        env:
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name || 'manual-trigger' }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion || 'success' }}
+          RUN_ID: ${{ github.event.workflow_run.id || github.run_id }}
+          PUSHGATEWAY_URL: ${{ secrets.PUSHGATEWAY_URL || 'http://pushgateway.monitoring.svc.cluster.local:9091' }}
+        run: |
+          echo "Processing CI/CD health metrics for workflow: ${WORKFLOW_NAME} (Conclusion: ${CONCLUSION})"
+
+          # Determine numeric status (1 for success, 0 for failure)
+          STATUS_VAL=0
+          if [ "${CONCLUSION}" = "success" ]; then
+            STATUS_VAL=1
+          fi
+
+          cat <<EOF > /tmp/metrics.txt
+          # HELP github_workflow_run_status Status of GitHub Actions workflow run (1 = success, 0 = failure)
+          # TYPE github_workflow_run_status gauge
+          github_workflow_run_status{workflow="${WORKFLOW_NAME}",conclusion="${CONCLUSION}",run_id="${RUN_ID}"} ${STATUS_VAL}
+
+          # HELP github_workflow_run_total Total count of workflow executions by outcome
+          # TYPE github_workflow_run_total counter
+          github_workflow_run_total{workflow="${WORKFLOW_NAME}",conclusion="${CONCLUSION}"} 1
+          EOF
+
+          echo "Generated metrics payload:"
+          cat /tmp/metrics.txt
+
+          # If in cluster or pushgateway reachable, dispatch HTTP POST
+          if curl --connect-timeout 2 -s "${PUSHGATEWAY_URL}/-/healthy" > /dev/null 2>&1; then
+            curl -s --data-binary @/tmp/metrics.txt "${PUSHGATEWAY_URL}/metrics/job/github_actions/instance/${WORKFLOW_NAME}"
+            echo "Successfully delivered metrics to Prometheus Pushgateway"
+          else
+            echo "Pushgateway not directly reachable from public runner; metrics logged locally."
+          fi

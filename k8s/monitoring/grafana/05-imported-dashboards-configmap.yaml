@@ -2362,6 +2362,173 @@ data:
       "version": 0,
       "weekStart": ""
     }
+  github-actions-health.json: |
+    {
+      "annotations": {
+        "list": []
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "id": 1,
+          "title": "CI/CD Pipeline Overview",
+          "type": "row"
+        },
+        {
+          "id": 2,
+          "title": "Workflow Success Rate (%)",
+          "type": "gauge",
+          "gridPos": { "h": 6, "w": 6, "x": 0, "y": 1 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "sum(github_workflow_run_status{conclusion=\"success\"}) / (sum(github_workflow_run_status{conclusion=~\"success|failure\"}) + 0.0001) * 100",
+              "legendFormat": "Success Rate"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": null },
+                  { "color": "yellow", "value": 85 },
+                  { "color": "green", "value": 95 }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 3,
+          "title": "Failed Workflow Runs (Last 24h)",
+          "type": "stat",
+          "gridPos": { "h": 6, "w": 6, "x": 6, "y": 1 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "sum(increase(github_workflow_run_status{conclusion=\"failure\"}[24h])) or vector(0)",
+              "legendFormat": "Failures"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green", "value": null },
+                  { "color": "red", "value": 1 }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 4,
+          "title": "Successful Workflow Runs (Last 24h)",
+          "type": "stat",
+          "gridPos": { "h": 6, "w": 6, "x": 12, "y": 1 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "sum(increase(github_workflow_run_status{conclusion=\"success\"}[24h])) or vector(0)",
+              "legendFormat": "Successes"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" }
+            }
+          }
+        },
+        {
+          "id": 5,
+          "title": "Average Workflow Duration (s)",
+          "type": "stat",
+          "gridPos": { "h": 6, "w": 6, "x": 18, "y": 1 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "avg(github_workflow_run_duration_seconds) or vector(0)",
+              "legendFormat": "Avg Duration"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            }
+          }
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 7 },
+          "id": 6,
+          "title": "Workflow Run Trends & Failure Visibility",
+          "type": "row"
+        },
+        {
+          "id": 7,
+          "title": "Workflow Run Status Distribution (Success vs Failure)",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "sum by (workflow, conclusion) (increase(github_workflow_run_status[1h]))",
+              "legendFormat": "{{workflow}} ({{conclusion}})"
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "title": "Workflow Run Durations by Workflow",
+          "type": "timeseries",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "github_workflow_run_duration_seconds",
+              "legendFormat": "{{workflow}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            }
+          }
+        },
+        {
+          "id": 9,
+          "title": "Recent Failed Workflow Runs",
+          "type": "table",
+          "gridPos": { "h": 7, "w": 24, "x": 0, "y": 16 },
+          "targets": [
+            {
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "github_workflow_run_status{conclusion=\"failure\"} == 1",
+              "format": "table",
+              "instant": true
+            }
+          ]
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 39,
+      "tags": ["github-actions", "cicd", "devops", "titanops"],
+      "title": "TitanOps HMS - GitHub Actions CI/CD Pipeline Health",
+      "uid": "titanops-github-actions"
+    }
   medicore-hms.json: |+
     {
       "annotations": {
