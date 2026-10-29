@@ -13,13 +13,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
 /**
  * Dedicated auth endpoints:
- *   POST /api/auth/register  – register a new user (hashes password, checks duplicate)
+ *   POST /api/auth/register  – register a new user (Bean Validation, password hash, duplicate check)
  *   POST /api/auth/login     – validate credentials, enforce brute-force rate limit/lockout, return JWT
  */
 @RestController
@@ -41,14 +42,8 @@ public class AuthController {
 
     @PostMapping("/register")
     @WithSpan("AuthController.register")
-    public ResponseEntity<User> register(@RequestBody User user) {
+    public ResponseEntity<?> register(@Valid @RequestBody User user) {
         log.info("POST /api/auth/register username={}", user.getUsername());
-        if (user.getUsername() == null || user.getUsername().isBlank()) {
-            return ResponseEntity.badRequest().build();
-        }
-        if (user.getPassword() == null || user.getPassword().length() < 6) {
-            return ResponseEntity.badRequest().build();
-        }
         try {
             // Default role if not provided
             if (user.getRole() == null || user.getRole().isBlank()) {
@@ -59,7 +54,8 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.CREATED).body(saved);
         } catch (IllegalArgumentException e) {
             log.warn("POST /api/auth/register -> 409 {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", "Conflict", "message", e.getMessage()));
         } catch (Exception e) {
             log.error("POST /api/auth/register failed: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -74,8 +70,8 @@ public class AuthController {
         String username = credentials.get("username");
         String password = credentials.get("password");
         log.info("POST /api/auth/login username={}", username);
-        if (username == null || password == null) {
-            return ResponseEntity.badRequest().build();
+        if (username == null || username.isBlank() || password == null || password.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Bad Request", "message", "Username and password cannot be blank"));
         }
 
         // Check brute-force lockout

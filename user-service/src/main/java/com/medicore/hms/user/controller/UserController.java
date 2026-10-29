@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -25,7 +27,7 @@ public class UserController {
 
     @PostMapping
     @WithSpan("UserController.createUser")
-    public ResponseEntity<User> createUser(@RequestBody User user) {
+    public ResponseEntity<User> createUser(@Valid @RequestBody User user) {
         log.info("POST /api/users username={}", user.getUsername());
         try {
             User saved = userService.createUser(user);
@@ -84,7 +86,7 @@ public class UserController {
 
     @PutMapping("/{id}")
     @WithSpan("UserController.updateUser")
-    public ResponseEntity<User> updateUser(@PathVariable @SpanAttribute("user.id") Long id, @RequestBody User user) {
+    public ResponseEntity<User> updateUser(@PathVariable @SpanAttribute("user.id") Long id, @Valid @RequestBody User user) {
         log.info("PUT /api/users/{}", id);
         try {
             user.setId(id);
