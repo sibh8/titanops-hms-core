@@ -1,0 +1,26 @@
+# ==============================================================================
+# TitanOps HMS: AWS Load Balancer Controller RBAC & IngressClass
+# Ticket: TITANOPS-128 (ALB Ingress Controller with ACM TLS)
+# ==============================================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: aws-load-balancer-controller
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: aws-load-balancer-controller
+    app.kubernetes.io/component: controller
+    app.kubernetes.io/part-of: titanops-hms
+  annotations:
+    eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/titanops-dev-aws-load-balancer-controller
+---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: alb
+  labels:
+    app.kubernetes.io/name: aws-load-balancer-controller
+    app.kubernetes.io/component: ingress-class
+    app.kubernetes.io/part-of: titanops-hms
+spec:
+  controller: ingress.k8s.aws/alb

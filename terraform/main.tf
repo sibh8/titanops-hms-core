@@ -119,5 +119,17 @@ module "secrets" {
   aws_region          = var.aws_region
 }
 
+# ------------------------------------------------------------------------------
+# ALB Ingress & ACM TLS Infrastructure (TITANOPS-128)
+# ------------------------------------------------------------------------------
+module "ingress" {
+  source = "./modules/ingress"
+
+  project_name        = var.project_name
+  environment         = var.environment
+  eks_oidc_issuer_url = module.eks.oidc_issuer
+}
+
+
 
 
