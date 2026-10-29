@@ -40,6 +40,9 @@ resource "aws_eks_cluster" "this" {
     bootstrap_cluster_creator_admin_permissions = true
   }
 
+  # Control Plane Audit Logging (TITANOPS-122)
+  enabled_cluster_log_types = var.cluster_log_types
+
   tags = {
     Project     = var.project_name
     Environment = var.environment

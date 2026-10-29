@@ -140,3 +140,27 @@ output "ecr_repository_arns" {
   value       = module.ecr.repository_arns
 }
 
+# ------------------------------------------------------------------------------
+# Audit & Compliance Logging (TITANOPS-122)
+# ------------------------------------------------------------------------------
+output "vpc_flow_log_id" {
+  description = "VPC Flow Log ID capturing network traffic"
+  value       = module.networking.vpc_flow_log_id
+}
+
+output "vpc_flow_log_group_arn" {
+  description = "CloudWatch Log Group ARN for VPC Flow Logs"
+  value       = module.networking.vpc_flow_log_group_arn
+}
+
+output "cloudtrail_arn" {
+  description = "CloudTrail ARN for API and management event auditing"
+  value       = module.cloudtrail.cloudtrail_arn
+}
+
+output "cloudtrail_bucket_name" {
+  description = "S3 bucket name archiving CloudTrail audit logs"
+  value       = module.cloudtrail.cloudtrail_bucket_name
+}
+
+

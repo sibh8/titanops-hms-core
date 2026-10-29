@@ -43,3 +43,18 @@ variable "enable_nat_gateway" {
   type        = bool
   default     = false
 }
+
+# ------------------------------------------------------------------------------
+# VPC Flow Logs (TITANOPS-122)
+# ------------------------------------------------------------------------------
+variable "enable_vpc_flow_logs" {
+  description = "Enable VPC Flow Logs shipped to CloudWatch"
+  type        = bool
+  default     = true
+}
+
+variable "flow_logs_retention_days" {
+  description = "CloudWatch log retention period in days for VPC Flow Logs"
+  type        = number
+  default     = 30
+}

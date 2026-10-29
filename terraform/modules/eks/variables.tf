@@ -75,3 +75,13 @@ variable "public_access_cidrs" {
     error_message = "All public_access_cidrs must be valid, restricted IPv4 CIDR blocks; 0.0.0.0/0 is strictly prohibited for security compliance."
   }
 }
+
+# ------------------------------------------------------------------------------
+# EKS Control Plane Audit Logging (TITANOPS-122)
+# ------------------------------------------------------------------------------
+variable "cluster_log_types" {
+  description = "List of desired EKS control plane log types to export to CloudWatch"
+  type        = list(string)
+  default     = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+}
+
