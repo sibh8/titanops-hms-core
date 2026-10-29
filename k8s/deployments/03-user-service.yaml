@@ -6,6 +6,10 @@ metadata:
   labels:
     app.kubernetes.io/name: user-service
     app.kubernetes.io/part-of: titanops-hms
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/actuator/prometheus"
+    prometheus.io/port: "8082"
     app.kubernetes.io/component: microservice
 spec:
   replicas: 2
@@ -89,6 +93,10 @@ metadata:
   labels:
     app.kubernetes.io/name: user-service
     app.kubernetes.io/part-of: titanops-hms
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/actuator/prometheus"
+    prometheus.io/port: "8082"
 spec:
   type: ClusterIP
   ports:

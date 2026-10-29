@@ -1,5 +1,5 @@
 # ==============================================================================
-# TitanOps HMS: Prometheus Server Configuration ConfigMap (TITANOPS-39)
+# TitanOps HMS: Prometheus Server Configuration ConfigMap (TITANOPS-39 / TITANOPS-74)
 # ==============================================================================
 apiVersion: v1
 kind: ConfigMap
@@ -111,3 +111,78 @@ data:
           - source_labels: [__meta_kubernetes_service_name]
             action: replace
             target_label: kubernetes_service_name
+
+      # ------------------------------------------------------------------------
+      # TitanOps HMS: Microservices Dynamic Service Discovery (TITANOPS-74)
+      # ------------------------------------------------------------------------
+      - job_name: 'titanops-microservices-sd'
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names:
+                - hms
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: (patient|user|appointment|provider|encounter|billing|lab|medication|prescription)-service
+          - source_labels: [__meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: http
+          - target_label: __metrics_path__
+            replacement: /actuator/prometheus
+          - source_labels: [__meta_kubernetes_service_name]
+            target_label: app
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+
+      # ------------------------------------------------------------------------
+      # TitanOps HMS: Ported Microservices Direct In-Cluster Scrape Jobs (TITANOPS-74)
+      # ------------------------------------------------------------------------
+      - job_name: 'otel-collector'
+        static_configs:
+          - targets: ['otel-collector.hms.svc.cluster.local:8889']
+
+      - job_name: 'patient-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['patient-service.hms.svc.cluster.local:8081']
+
+      - job_name: 'user-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['user-service.hms.svc.cluster.local:8082']
+
+      - job_name: 'appointment-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['appointment-service.hms.svc.cluster.local:8083']
+
+      - job_name: 'provider-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['provider-service.hms.svc.cluster.local:8084']
+
+      - job_name: 'encounter-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['encounter-service.hms.svc.cluster.local:8085']
+
+      - job_name: 'billing-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['billing-service.hms.svc.cluster.local:8086']
+
+      - job_name: 'lab-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['lab-service.hms.svc.cluster.local:8087']
+
+      - job_name: 'medication-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['medication-service.hms.svc.cluster.local:8088']
+
+      - job_name: 'prescription-service'
+        metrics_path: '/actuator/prometheus'
+        static_configs:
+          - targets: ['prescription-service.hms.svc.cluster.local:8089']
