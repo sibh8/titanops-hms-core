@@ -140,6 +140,19 @@ module "waf" {
   environment  = var.environment
 }
 
+# ------------------------------------------------------------------------------
+# Centralized Container Log Aggregation & Retention (TITANOPS-132)
+# ------------------------------------------------------------------------------
+module "logging" {
+  source = "./modules/logging"
+
+  project_name        = var.project_name
+  environment         = var.environment
+  cluster_name        = module.eks.cluster_id
+  eks_oidc_issuer_url = module.eks.oidc_issuer
+}
+
+
 
 
 
