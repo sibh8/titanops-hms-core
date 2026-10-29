@@ -17,7 +17,7 @@ if [ -z "${DB_PASSWORD}" ]; then
     exit 1
 fi
 
-JDBC_URL="jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=true&requireSSL=true&verifyServerCertificate=false&allowPublicKeyRetrieval=true"
+JDBC_URL="jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=true&requireSSL=true&verifyServerCertificate=true&allowPublicKeyRetrieval=true"
 
 kubectl create secret generic "${SECRET_NAME}" \
   --namespace="${NAMESPACE}" \

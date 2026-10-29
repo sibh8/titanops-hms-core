@@ -48,3 +48,15 @@ variable "aws_region" {
   type    = string
   default = "us-east-1"
 }
+
+variable "rotation_lambda_arn" {
+  type        = string
+  description = "ARN of the Lambda function used to rotate Secrets Manager RDS secrets"
+  default     = ""
+}
+
+variable "rotation_interval_days" {
+  type        = number
+  description = "Automated rotation interval in days for database credentials"
+  default     = 30
+}

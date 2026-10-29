@@ -1,7 +1,8 @@
 version: '3.8'
 
 x-db-env: &db-env
-  SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://mysql:3306/medicore_hms?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+  # TITANOPS-119: Enforce TLS encryption and server certificate verification against database
+  SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://mysql:3306/medicore_hms?useSSL=true&requireSSL=true&verifyServerCertificate=true&serverTimezone=UTC}
   SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-medicore}
   SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-medicore_pass}
   SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
