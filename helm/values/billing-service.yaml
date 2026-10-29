@@ -7,11 +7,12 @@ service:
   targetPort: 8084
 
 env:
-  SPRING_DATASOURCE_URL: "jdbc:mysql://medicore-mysql:3306/medicore_hms?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
-  SPRING_DATASOURCE_USERNAME: "medicore"
-  SPRING_DATASOURCE_PASSWORD: "medicore_pass"
   OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector:4317"
   OTEL_SERVICE_NAME: "billing-service"
+
+envFrom:
+  - secretRef:
+      name: titanops-datasource-credentials
 
 networkPolicy:
   enabled: true
