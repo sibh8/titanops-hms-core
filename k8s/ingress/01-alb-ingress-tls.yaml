@@ -1,0 +1,107 @@
+# ==============================================================================
+# TitanOps HMS: Public Application Load Balancer (ALB) Ingress Manifest
+# Ticket: TITANOPS-128 (ALB Ingress Controller with ACM TLS HTTPS-only)
+# ==============================================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: titanops-alb-ingress
+  namespace: titanops
+  labels:
+    app.kubernetes.io/name: titanops-alb-ingress
+    app.kubernetes.io/part-of: titanops-hms
+    app.kubernetes.io/managed-by: aws-load-balancer-controller
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:123456789012:certificate/titanops-wildcard
+    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
+    alb.ingress.kubernetes.io/success-codes: '200,301,302'
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          # Frontend React UI (Root & static assets)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+          # Microservice API Endpoints
+          - path: /api/v1/patients
+            pathType: Prefix
+            backend:
+              service:
+                name: patient-service
+                port:
+                  number: 8081
+          - path: /api/v1/appointments
+            pathType: Prefix
+            backend:
+              service:
+                name: appointment-service
+                port:
+                  number: 8082
+          - path: /api/v1/billing
+            pathType: Prefix
+            backend:
+              service:
+                name: billing-service
+                port:
+                  number: 8083
+          - path: /api/v1/users
+            pathType: Prefix
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 8084
+          - path: /api/v1/auth
+            pathType: Prefix
+            backend:
+              service:
+                name: user-service
+                port:
+                  number: 8084
+          - path: /api/v1/encounters
+            pathType: Prefix
+            backend:
+              service:
+                name: encounter-service
+                port:
+                  number: 8085
+          - path: /api/v1/labs
+            pathType: Prefix
+            backend:
+              service:
+                name: lab-service
+                port:
+                  number: 8086
+          - path: /api/v1/medications
+            pathType: Prefix
+            backend:
+              service:
+                name: medication-service
+                port:
+                  number: 8087
+          - path: /api/v1/prescriptions
+            pathType: Prefix
+            backend:
+              service:
+                name: prescription-service
+                port:
+                  number: 8088
+          - path: /api/v1/providers
+            pathType: Prefix
+            backend:
+              service:
+                name: provider-service
+                port:
+                  number: 8089

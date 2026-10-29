@@ -181,5 +181,19 @@ output "secrets_external_secrets_role_arn" {
   value       = module.secrets.external_secrets_role_arn
 }
 
+# ------------------------------------------------------------------------------
+# ALB Ingress & ACM TLS (TITANOPS-128)
+# ------------------------------------------------------------------------------
+output "acm_certificate_arn" {
+  description = "ACM Certificate ARN for ALB HTTPS listener"
+  value       = module.ingress.certificate_arn
+}
+
+output "aws_load_balancer_controller_role_arn" {
+  description = "IAM IRSA Role ARN for AWS Load Balancer Controller"
+  value       = module.ingress.load_balancer_controller_role_arn
+}
+
+
 
 
