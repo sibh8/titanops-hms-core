@@ -232,3 +232,40 @@ jobs:
           echo "**Target Environment:** \`$TARGET_ENV\` | **Namespace:** \`$K8S_NAMESPACE\`" >> "$GITHUB_STEP_SUMMARY"
           echo "**Deployed Version Tag:** \`${{ needs.build.outputs.image_tag }}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "**Deploy Duration:** \`${ELAPSED}s\`" >> "$GITHUB_STEP_SUMMARY"
+
+  # ── 4. POST-DEPLOY INTEGRATION TESTS (TITANOPS-73) ────────────────────────
+  post-deploy-integration-tests:
+    name: Post-Deploy Integration Verification
+    needs: [deploy]
+    runs-on: ubuntu-latest
+    if: needs.deploy.result == 'success'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@1e60f620b9541d16bece96c5465dc8ee9832be0b # v4.2.0
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: integration-tests/package.json
+
+      - name: Install Integration Test Dependencies
+        working-directory: integration-tests
+        run: |
+          npm ci || npm install
+
+      - name: Run Integration Test Suite
+        working-directory: integration-tests
+        run: |
+          mkdir -p ../test-reports
+          set -o pipefail
+          ./run-tests.sh 2>&1 | tee ../test-reports/integration-test-results.log
+
+      - name: Upload Integration Test Reports as Artifact
+        if: always()
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+        with:
+          name: integration-test-reports
+          path: test-reports/
+          retention-days: 14
