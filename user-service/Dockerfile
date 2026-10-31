@@ -10,7 +10,7 @@ RUN groupadd -g 10001 appgroup && \
     chown -R 10001:10001 /app
 
 # Download OpenTelemetry Java agent
-ADD https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/download/v1.33.6/opentelemetry-javaagent.jar /app/opentelemetry-javaagent.jar
+COPY --chown=10001:10001 opentelemetry-javaagent.jar /app/opentelemetry-javaagent.jar
 RUN chmod 644 /app/opentelemetry-javaagent.jar && chown 10001:10001 /app/opentelemetry-javaagent.jar
 
 # Copy the executable JAR file from the build context

@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/part-of: titanops-hms
     app.kubernetes.io/component: ui
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: frontend
@@ -32,21 +32,18 @@ spec:
           type: RuntimeDefault
       containers:
         - name: frontend
-          image: medicore/frontend:latest
-          imagePullPolicy: IfNotPresent
+          image: 561789488706.dkr.ecr.ap-south-1.amazonaws.com/medicore/frontend:latest
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 80
               protocol: TCP
           securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: true
+            readOnlyRootFilesystem: false
             runAsNonRoot: true
             runAsUser: 101
             runAsGroup: 101
-            capabilities:
-              drop:
-                - ALL
           resources:
             requests:
               cpu: 50m
@@ -94,8 +91,7 @@ metadata:
     app.kubernetes.io/name: frontend
     app.kubernetes.io/part-of: titanops-hms
   annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: "external"
-    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "instance"
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
     service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
 spec:
   type: LoadBalancer
