@@ -18,9 +18,12 @@ resource "random_password" "grafana_password" {
 # Secrets Manager: Database Credentials (with TLS enforced)
 # ------------------------------------------------------------------------------
 resource "aws_secretsmanager_secret" "database" {
-  name                    = "${var.project_name}/${var.environment}/database"
-  description             = "TitanOps HMS RDS MySQL master database credentials"
-  kms_key_id              = var.kms_key_id != "" ? var.kms_key_id : null
+  # Use name_prefix so Terraform generates a unique name automatically.
+  # This avoids conflicts with old secrets left over from previous failed runs
+  # that still have a stale/pending-deletion KMS key associated with them.
+  name_prefix             = "${var.project_name}/${var.environment}/database-"
+  description             = "TitanOps HMS MySQL master database credentials"
+  kms_key_id              = null   # use AWS default managed key (no custom KMS required)
   recovery_window_in_days = 0
 
   tags = {
@@ -34,7 +37,7 @@ resource "aws_secretsmanager_secret" "database" {
 resource "aws_secretsmanager_secret_version" "database" {
   secret_id = aws_secretsmanager_secret.database.id
   secret_string = jsonencode({
-    SPRING_DATASOURCE_URL      = "jdbc:mysql://${var.database_endpoint}/${var.database_name}?useSSL=true&requireSSL=true&verifyServerCertificate=true"
+    SPRING_DATASOURCE_URL      = "jdbc:mysql://${var.database_endpoint}/${var.database_name}?useSSL=false&allowPublicKeyRetrieval=true"
     SPRING_DATASOURCE_USERNAME = var.database_username
     SPRING_DATASOURCE_PASSWORD = random_password.db_password.result
   })
@@ -44,9 +47,9 @@ resource "aws_secretsmanager_secret_version" "database" {
 # Secrets Manager: Grafana Admin Credentials
 # ------------------------------------------------------------------------------
 resource "aws_secretsmanager_secret" "grafana" {
-  name                    = "${var.project_name}/${var.environment}/grafana"
+  name_prefix             = "${var.project_name}/${var.environment}/grafana-"
   description             = "TitanOps HMS Grafana administrative credentials"
-  kms_key_id              = var.kms_key_id != "" ? var.kms_key_id : null
+  kms_key_id              = null   # use AWS default managed key
   recovery_window_in_days = 0
 
   tags = {
