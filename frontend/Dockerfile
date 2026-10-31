@@ -15,6 +15,8 @@ FROM nginx:1.25.5-alpine
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/conf.d/medicore.conf
+COPY 40-dns-resolver.sh /docker-entrypoint.d/40-dns-resolver.sh
+RUN chmod +x /docker-entrypoint.d/40-dns-resolver.sh
 
 # Copy Vite build output
 COPY --from=build /app/dist /usr/share/nginx/html
@@ -24,8 +26,8 @@ RUN apk add --no-cache libcap \
     && setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx \
     && sed -i 's|^user |#user |' /etc/nginx/nginx.conf \
     && sed -i 's|/var/run/nginx.pid|/tmp/nginx.pid|' /etc/nginx/nginx.conf \
-    && chown -R 101:101 /var/cache/nginx /var/log/nginx /etc/nginx /tmp /usr/share/nginx/html \
-    && chmod -R 755 /var/cache/nginx /var/log/nginx /etc/nginx /tmp /usr/share/nginx/html
+    && chown -R 101:101 /var/cache/nginx /var/log/nginx /etc/nginx /tmp /usr/share/nginx/html /docker-entrypoint.d \
+    && chmod -R 755 /var/cache/nginx /var/log/nginx /etc/nginx /tmp /usr/share/nginx/html /docker-entrypoint.d
 
 EXPOSE 80
 
