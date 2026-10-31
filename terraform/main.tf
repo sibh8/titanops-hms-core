@@ -47,10 +47,13 @@ module "bastion" {
 
 # ------------------------------------------------------------------------------
 # AWS RDS MySQL Multi-AZ & KMS-Encrypted (TITANOPS-118)
+# NOTE: enable_rds = false because RDS is blocked by AWS Org SCP on this account.
+#       In-cluster MySQL Helm chart is used instead. See helm/mysql-values.yaml.
 # ------------------------------------------------------------------------------
 module "rds" {
   source = "./modules/rds"
 
+  enable_rds                    = var.enable_rds
   project_name                  = var.project_name
   environment                   = var.environment
   vpc_id                        = module.networking.vpc_id
@@ -108,19 +111,22 @@ module "cloudtrail" {
 module "secrets" {
   source = "./modules/secrets"
 
-  project_name        = var.project_name
-  environment         = var.environment
-  database_name       = var.database_name
-  database_username   = var.database_username
-  database_endpoint   = module.rds.db_endpoint
-  kms_key_id          = module.rds.kms_key_arn
-  eks_oidc_issuer_url = module.eks.oidc_issuer
-  namespace           = var.kubernetes_namespace
-  aws_region          = var.aws_region
+  project_name            = var.project_name
+  environment             = var.environment
+  database_name           = var.database_name
+  database_username       = var.database_username
+  database_endpoint       = module.rds.db_endpoint
+  kms_key_id              = module.rds.kms_key_arn
+  eks_oidc_issuer_url     = module.eks.oidc_issuer
+  namespace               = var.kubernetes_namespace
+  aws_region              = var.aws_region
+  enable_secrets_rotation = var.enable_secrets_rotation
 }
 
 # ------------------------------------------------------------------------------
 # ALB Ingress & ACM TLS Infrastructure (TITANOPS-128)
+# NOTE: enable_acm_tls = false because titanops.internal is not a real public
+#       domain; DNS validation will never succeed. HTTP-only ALB for dev.
 # ------------------------------------------------------------------------------
 module "ingress" {
   source = "./modules/ingress"
@@ -128,6 +134,7 @@ module "ingress" {
   project_name        = var.project_name
   environment         = var.environment
   eks_oidc_issuer_url = module.eks.oidc_issuer
+  enable_acm_tls      = var.enable_acm_tls
 }
 
 # ------------------------------------------------------------------------------

@@ -197,8 +197,9 @@ resource "aws_iam_role_policy_attachment" "db_rotation" {
 }
 
 resource "aws_secretsmanager_secret_rotation" "database" {
+  count               = var.enable_secrets_rotation ? 1 : 0
   secret_id           = aws_secretsmanager_secret.database.id
-  rotation_lambda_arn = var.rotation_lambda_arn != "" ? var.rotation_lambda_arn : "arn:aws:lambda:${var.aws_region}:123456789012:function:${var.project_name}-${var.environment}-rds-rotation"
+  rotation_lambda_arn = var.rotation_lambda_arn
 
   rotation_rules {
     automatically_after_days = var.rotation_interval_days

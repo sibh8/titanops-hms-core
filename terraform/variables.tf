@@ -182,3 +182,24 @@ variable "rds_skip_final_snapshot" {
   type        = bool
   default     = true
 }
+
+# ------------------------------------------------------------------------------
+# Feature Flags — disable features blocked by AWS Org SCP or missing resources
+# ------------------------------------------------------------------------------
+variable "enable_rds" {
+  description = "Enable AWS RDS MySQL. Set false (default) when RDS is blocked by SCP; use in-cluster MySQL Helm chart instead."
+  type        = bool
+  default     = false
+}
+
+variable "enable_acm_tls" {
+  description = "Enable ACM TLS certificate provisioning via DNS validation. Requires a real registered public domain."
+  type        = bool
+  default     = false
+}
+
+variable "enable_secrets_rotation" {
+  description = "Enable Secrets Manager automatic rotation. Requires a deployed rotation Lambda ARN."
+  type        = bool
+  default     = false
+}

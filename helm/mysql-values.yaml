@@ -1,0 +1,34 @@
+# ==============================================================================
+# TitanOps HMS: Bitnami MySQL Helm Chart Values
+# In-cluster MySQL — used when RDS is blocked by AWS Org SCP.
+# Namespace: hms
+# Service DNS: mysql.hms.svc.cluster.local:3306
+# ==============================================================================
+
+auth:
+  rootPassword: "medicore_root_pass"
+  database: medicore_hms
+  username: medicore
+  password: "medicore_pass"
+
+primary:
+  persistence:
+    enabled: true
+    size: 8Gi
+    storageClass: ""   # uses cluster default StorageClass (gp2 on EKS)
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+service:
+  type: ClusterIP
+  port: 3306
+
+# Disable secondary replicas for dev (enable for prod)
+secondary:
+  replicaCount: 0

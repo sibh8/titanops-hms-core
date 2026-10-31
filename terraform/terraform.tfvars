@@ -33,3 +33,11 @@ rds_mysql_version           = "8.0.35"
 rds_multi_az                = true
 rds_backup_retention_period = 7
 rds_skip_final_snapshot     = true
+
+# Feature flags — disabled because:
+# - enable_rds: RDS is blocked by AWS Org SCP (p-h9javrcp) on account 561789488706
+# - enable_acm_tls: titanops.internal is not a real public domain; DNS validation cannot succeed
+# - enable_secrets_rotation: No rotation Lambda exists; enable after deploying one
+enable_rds              = false
+enable_acm_tls          = false
+enable_secrets_rotation = false

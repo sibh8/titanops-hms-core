@@ -28,7 +28,7 @@ resource "aws_cloudwatch_log_group" "waf_logs" {
 # ------------------------------------------------------------------------------
 resource "aws_wafv2_web_acl" "public_alb" {
   name        = "${var.project_name}-${var.environment}-alb-waf"
-  description = "AWS WAFv2 WebACL protecting public Application Load Balancer with OWASP & SQLi rules"
+  description = "WAFv2 WebACL protecting ALB with OWASP and SQLi managed rules"
   scope       = "REGIONAL"
 
   default_action {

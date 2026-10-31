@@ -2,6 +2,12 @@
 # TitanOps HMS: RDS MySQL Module Variables - TITANOPS-118
 # ==============================================================================
 
+variable "enable_rds" {
+  description = "Enable AWS RDS MySQL. Set false to use in-cluster MySQL Helm chart instead (required when RDS is blocked by SCP)."
+  type        = bool
+  default     = false
+}
+
 variable "project_name" {
   description = "Project name prefix for resources"
   type        = string
