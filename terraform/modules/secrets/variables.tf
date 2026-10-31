@@ -55,6 +55,12 @@ variable "rotation_lambda_arn" {
   default     = ""
 }
 
+variable "enable_secrets_rotation" {
+  type        = bool
+  description = "Enable Secrets Manager automatic rotation. Requires a deployed rotation Lambda."
+  default     = false
+}
+
 variable "rotation_interval_days" {
   type        = number
   description = "Automated rotation interval in days for database credentials"

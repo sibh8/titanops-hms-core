@@ -18,8 +18,11 @@ locals {
 
 # ------------------------------------------------------------------------------
 # ACM TLS Certificate (Issued for HTTPS Termination on ALB)
+# Disabled by default — titanops.internal is not a public domain; DNS validation
+# will never succeed. Set enable_acm_tls = true only with a real registered domain.
 # ------------------------------------------------------------------------------
 resource "aws_acm_certificate" "alb_tls" {
+  count             = var.enable_acm_tls ? 1 : 0
   domain_name       = var.domain_name
   validation_method = "DNS"
 

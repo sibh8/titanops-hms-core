@@ -20,3 +20,9 @@ variable "domain_name" {
   description = "Domain name for ACM TLS certificate"
   default     = "titanops.internal"
 }
+
+variable "enable_acm_tls" {
+  type        = bool
+  description = "Enable ACM TLS certificate provisioning. Requires a valid public domain with DNS validation."
+  default     = false
+}
