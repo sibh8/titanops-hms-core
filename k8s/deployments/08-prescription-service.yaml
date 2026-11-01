@@ -9,7 +9,7 @@ metadata:
   annotations:
     prometheus.io/scrape: "true"
     prometheus.io/path: "/actuator/prometheus"
-    prometheus.io/port: "8089"
+    prometheus.io/port: "8088"
     app.kubernetes.io/component: microservice
 spec:
   replicas: 1
@@ -106,7 +106,7 @@ metadata:
   annotations:
     prometheus.io/scrape: "true"
     prometheus.io/path: "/actuator/prometheus"
-    prometheus.io/port: "8089"
+    prometheus.io/port: "8088"
 spec:
   type: ClusterIP
   ports:

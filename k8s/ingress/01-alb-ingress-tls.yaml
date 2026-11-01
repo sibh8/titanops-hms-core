@@ -1,12 +1,24 @@
 # ==============================================================================
 # TitanOps HMS: Public Application Load Balancer (ALB) Ingress Manifest
 # Ticket: TITANOPS-128 (ALB Ingress Controller with ACM TLS HTTPS-only)
+#
+# ROUTING MODEL (Option A):
+# The ALB fronts ONLY the frontend Service. The frontend container runs nginx
+# (see frontend/nginx.conf) which reverse-proxies every /api/* request to the
+# correct backend microservice. This keeps a SINGLE source of truth for API
+# routing that is identical in local docker-compose and in EKS, so the browser
+# always calls same-origin /api/<resource> and never a divergent /api/v1 scheme.
+#
+# Do NOT add per-service /api/v1/* rules here: the backends expose /api/<resource>
+# (e.g. /api/invoices, /api/lab) with no version prefix, and the SPA calls those
+# same-origin. Direct ALB->service API rules previously drifted out of sync with
+# the controllers (wrong prefix, wrong names, swapped ports) and were dead code.
 # ==============================================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: titanops-alb-ingress
-  namespace: titanops
+  namespace: hms
   labels:
     app.kubernetes.io/name: titanops-alb-ingress
     app.kubernetes.io/part-of: titanops-hms
@@ -26,7 +38,9 @@ metadata:
       Referrer-Policy: strict-origin-when-cross-origin
       Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
       Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self' http: https:; frame-ancestors 'self';
-    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+    # Health check against the frontend nginx /health endpoint (matches
+    # frontend/nginx.conf and the frontend Deployment liveness/readiness probes).
+    alb.ingress.kubernetes.io/healthcheck-path: /health
     alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
     alb.ingress.kubernetes.io/success-codes: '200,301,302'
 spec:
@@ -34,7 +48,9 @@ spec:
   rules:
     - http:
         paths:
-          # Frontend React UI (Root & static assets)
+          # All traffic (UI, static assets, and same-origin /api/* calls) goes to
+          # the frontend Service; nginx inside the frontend pod fans /api/* out to
+          # the individual microservices.
           - path: /
             pathType: Prefix
             backend:
@@ -42,74 +58,3 @@ spec:
                 name: frontend
                 port:
                   number: 80
-          # Microservice API Endpoints
-          - path: /api/v1/patients
-            pathType: Prefix
-            backend:
-              service:
-                name: patient-service
-                port:
-                  number: 8081
-          - path: /api/v1/appointments
-            pathType: Prefix
-            backend:
-              service:
-                name: appointment-service
-                port:
-                  number: 8082
-          - path: /api/v1/billing
-            pathType: Prefix
-            backend:
-              service:
-                name: billing-service
-                port:
-                  number: 8083
-          - path: /api/v1/users
-            pathType: Prefix
-            backend:
-              service:
-                name: user-service
-                port:
-                  number: 8084
-          - path: /api/v1/auth
-            pathType: Prefix
-            backend:
-              service:
-                name: user-service
-                port:
-                  number: 8084
-          - path: /api/v1/encounters
-            pathType: Prefix
-            backend:
-              service:
-                name: encounter-service
-                port:
-                  number: 8085
-          - path: /api/v1/labs
-            pathType: Prefix
-            backend:
-              service:
-                name: lab-service
-                port:
-                  number: 8086
-          - path: /api/v1/medications
-            pathType: Prefix
-            backend:
-              service:
-                name: medication-service
-                port:
-                  number: 8087
-          - path: /api/v1/prescriptions
-            pathType: Prefix
-            backend:
-              service:
-                name: prescription-service
-                port:
-                  number: 8088
-          - path: /api/v1/providers
-            pathType: Prefix
-            backend:
-              service:
-                name: provider-service
-                port:
-                  number: 8089
