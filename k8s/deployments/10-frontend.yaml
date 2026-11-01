@@ -102,28 +102,8 @@ spec:
       protocol: TCP
   selector:
     app.kubernetes.io/name: frontend
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: frontend-ingress
-  namespace: hms
-  labels:
-    app.kubernetes.io/name: frontend-ingress
-    app.kubernetes.io/part-of: titanops-hms
-  annotations:
-    kubernetes.io/ingress.class: "alb"
-    alb.ingress.kubernetes.io/scheme: "internet-facing"
-    alb.ingress.kubernetes.io/target-type: "ip"
-    alb.ingress.kubernetes.io/healthcheck-path: "/health"
-spec:
-  rules:
-    - http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend
-                port:
-                  number: 80
+# NOTE: The public ALB Ingress for the frontend is defined once in
+# k8s/ingress/01-alb-ingress-tls.yaml (with ACM TLS, HTTPS redirect, WAF, and
+# hardened response headers). A second bare Ingress here would provision a
+# duplicate, non-TLS ALB fronting the same Service, so it has been removed.
+# This file now owns only the frontend Deployment and Service.

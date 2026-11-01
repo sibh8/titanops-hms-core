@@ -12,7 +12,7 @@ export const SERVICES = [
   { id: 'user-service',         label: 'User Service',         port: 8083, apiPath: '/api/users' },
   { id: 'billing-service',      label: 'Billing Service',      port: 8084, apiPath: '/api/invoices' },
   { id: 'encounter-service',    label: 'Encounter Service',    port: 8085, apiPath: '/api/encounters' },
-  { id: 'lab-service',          label: 'Lab Service',          port: 8086, apiPath: '/api/labs/orders' },
+  { id: 'lab-service',          label: 'Lab Service',          port: 8086, apiPath: '/api/lab/orders' },
   { id: 'medication-service',   label: 'Medication Service',   port: 8087, apiPath: '/api/medications' },
   { id: 'prescription-service', label: 'Prescription Service', port: 8088, apiPath: '/api/prescriptions' },
   { id: 'provider-service',     label: 'Provider Service',     port: 8089, apiPath: '/api/providers' },
