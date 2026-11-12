@@ -1,5 +1,5 @@
 name: medication-service
-
+run-name: medication-service
 on:
   push:
     branches: [ "main" ]

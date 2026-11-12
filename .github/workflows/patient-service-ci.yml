@@ -1,5 +1,5 @@
 name: patient-service
-
+run-name: patient-service
 on:
   push:
     branches: [ "main" ]

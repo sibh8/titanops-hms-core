@@ -1,5 +1,5 @@
 name: appointment-service
-
+run-name: appointment-service
 on:
   push:
     branches: [ "main" ]

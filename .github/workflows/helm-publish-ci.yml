@@ -1,5 +1,4 @@
-name: Helm - Package & Publish Chart (TITANOPS-52)
-
+name: Helm - Package & Publish Chart
 on:
   push:
     branches:

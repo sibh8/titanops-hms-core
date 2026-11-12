@@ -1,5 +1,5 @@
 name: billing-service
-
+run-name: billing-service
 on:
   push:
     branches: [ "main" ]

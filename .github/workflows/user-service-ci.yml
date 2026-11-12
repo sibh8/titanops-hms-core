@@ -1,5 +1,5 @@
 name: user-service
-
+run-name: user-service
 on:
   push:
     branches: [ "main" ]

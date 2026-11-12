@@ -1,5 +1,4 @@
-name: Terraform CI - Repeatable Provisioning & Idempotency (TITANOPS-28)
-
+name: Terraform CI - Repeatable Provisioning & Idempotency
 on:
   push:
     branches: [ "main" ]

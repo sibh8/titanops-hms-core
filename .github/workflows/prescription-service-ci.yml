@@ -1,5 +1,5 @@
 name: prescription-service
-
+run-name: prescription-service
 on:
   push:
     branches: [ "main" ]
