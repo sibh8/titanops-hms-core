@@ -58,7 +58,7 @@ jobs:
     # Performs Software Composition Analysis (SCA) to identify known CVEs in
     # third-party libraries (e.g., Spring Boot 2.5.14 and its transitive dependencies).
     - name: Run Dependency / SCA Vulnerability Scanner
-      uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+      uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
       with:
         scan-type: 'fs'
         scan-ref: 'prescription-service'
@@ -121,7 +121,7 @@ jobs:
       run: docker load --input /tmp/prescription-service.tar
 
     - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
+      uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
       with:
         image-ref: 'ghcr.io/${{ github.repository }}/prescription-service:${{ steps.gitversion.outputs.semVer }}'
         format: 'table'
