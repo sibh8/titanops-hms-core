@@ -62,7 +62,7 @@ jobs:
           ./helm/verify-packaging.sh
 
       - name: Upload Packaged Chart Artifacts
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb99ba8afd # v4.6.1
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: packaged-helm-charts
           path: |
@@ -86,7 +86,7 @@ jobs:
 
       - name: Configure AWS credentials via OIDC
         continue-on-error: true # Allows non-AWS or sandbox environments to complete pipeline
-        uses: aws-actions/configure-aws-credentials@e3ddf1a9912006787b5fce02b6e637d5445b4c65 # v4.0.2
+        uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502 # v4.0.2
         with:
           role-to-assume: ${{ vars.AWS_OIDC_ROLE_ARN || 'arn:aws:iam::111122223333:role/dummy' }}
           aws-region: ${{ vars.AWS_REGION || 'ap-south-1' }}

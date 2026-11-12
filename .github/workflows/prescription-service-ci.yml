@@ -35,13 +35,13 @@ jobs:
       with:
         fetch-depth: 0
     - name: Set up JDK 11
-      uses: actions/setup-java@3a4f6e1af504cf6a31855fa8f9c6aaabac41b7b2 # v4.7.0
+      uses: actions/setup-java@3a4f6e1af504cf6a31855fa899c6aa5355ba6c12 # v4.7.0
       with:
         java-version: '11'
         distribution: 'temurin'
         cache: maven
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@6bb034414ec7625ce856c3b22919648280f49e40 # v3.28.11
+      uses: github/codeql-action/init@6bb031afdd8eb862ea3fc1848194185e076637e5 # v3.28.11
       with:
         languages: java
     - name: Make Maven wrapper executable
@@ -50,7 +50,7 @@ jobs:
     - name: Build with Maven
       run: ./mvnw -B package --file pom.xml
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@6bb034414ec7625ce856c3b22919648280f49e40 # v3.28.11
+      uses: github/codeql-action/analyze@6bb031afdd8eb862ea3fc1848194185e076637e5 # v3.28.11
       with:
         upload: false
 
@@ -89,12 +89,12 @@ jobs:
         fi
 
     - name: Set up GitVersion
-      uses: gittools/actions/gitversion/setup@22316718d098e98031d102e3b33383a1a45426b3 # v4.7.0
+      uses: gittools/actions/gitversion/setup@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
       with:
-        versionSpec: '5.x'
+        versionSpec: '6.x'
     - name: Determine Version
       id: gitversion
-      uses: gittools/actions/gitversion/execute@22316718d098e98031d102e3b33383a1a45426b3 # v4.7.0
+      uses: gittools/actions/gitversion/execute@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
     - name: Log in to the GitHub Container registry
       uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
       with:
@@ -105,7 +105,7 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
     - name: Build and push Docker image
-      uses: docker/build-push-action@4f58ea79222b3b150c82522db7707f4a74d9b32f # v5.4.0
+      uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
       with:
         context: prescription-service
         file: prescription-service/Dockerfile
