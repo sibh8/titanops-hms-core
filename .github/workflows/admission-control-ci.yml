@@ -1,5 +1,4 @@
-name: Admission Control & Pod Security Standards (TITANOPS-125)
-
+name: Admission Control & Pod Security Standards
 on:
   pull_request:
     paths:

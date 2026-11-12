@@ -1,5 +1,4 @@
-name: Cost Optimization & Autoscaling Validation (TITANOPS-123)
-
+name: Cost Optimization & Autoscaling Validation
 on:
   pull_request:
     paths:

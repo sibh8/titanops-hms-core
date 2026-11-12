@@ -1,5 +1,5 @@
 name: encounter-service
-
+run-name: encounter-service
 on:
   push:
     branches: [ "main" ]

@@ -1,5 +1,4 @@
-name: Helm - Lifecycle Validation (Install, Upgrade, Rollback) (TITANOPS-53)
-
+name: Helm - Lifecycle Validation (Install, Upgrade, Rollback)
 on:
   push:
     branches: [ "main" ]

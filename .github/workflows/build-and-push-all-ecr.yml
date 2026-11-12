@@ -1,5 +1,4 @@
-name: Build & Push All Services to ECR (TITANOPS-65)
-
+name: Build & Push All Services to ECR
 on:
   push:
     branches:

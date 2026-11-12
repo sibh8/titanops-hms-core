@@ -1,5 +1,5 @@
 name: provider-service
-
+run-name: provider-service
 on:
   push:
     branches: [ "main" ]

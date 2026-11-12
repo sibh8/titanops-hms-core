@@ -1,5 +1,5 @@
 name: lab-service
-
+run-name: lab-service
 on:
   push:
     branches: [ "main" ]
