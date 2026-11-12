@@ -1,0 +1,46 @@
+name: deploy-appointment-service
+
+# Deploy pipeline for appointment-service.
+# Runs automatically after the "appointment-service" build workflow completes
+# successfully on main. Promotes the image GHCR -> ECR and rolls it out to EKS
+# via Helm (see reusable-ecr-push.yml). Can also be started manually.
+
+on:
+  workflow_run:
+    workflows: ["appointment-service"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag in GHCR to deploy (defaults to the latest commit SHA of the selected ref)"
+        required: false
+        type: string
+
+# One deploy at a time per service; queue instead of cancelling a rollout in flight.
+concurrency:
+  group: deploy-appointment-service
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+  packages: write
+
+jobs:
+  deploy:
+    name: Deploy appointment-service to EKS
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    uses: ./.github/workflows/reusable-ecr-push.yml
+    with:
+      service_name: appointment-service
+      context_dir: appointment-service
+      dockerfile: appointment-service/Dockerfile
+      # The build pushes an image tagged with its commit SHA; use that exact commit.
+      image_tag: ${{ inputs.image_tag || github.event.workflow_run.head_sha }}
+      git_sha: ${{ github.event.workflow_run.head_sha }}
+      ecr_repository: appointment-service
+    permissions:
+      id-token: write
+      contents: read
+      packages: write

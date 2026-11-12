@@ -1,0 +1,47 @@
+name: deploy-frontend
+
+# Deploy pipeline for the frontend (image: medicore-hms-ui).
+# Runs automatically after the "frontend" build workflow completes
+# successfully on main. Promotes the image GHCR -> ECR and rolls it out to EKS
+# via Helm (see reusable-ecr-push.yml). Can also be started manually.
+
+on:
+  workflow_run:
+    workflows: ["frontend"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag in GHCR to deploy (defaults to the latest commit SHA of the selected ref)"
+        required: false
+        type: string
+
+# One deploy at a time; queue instead of cancelling a rollout in flight.
+concurrency:
+  group: deploy-frontend
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+  packages: write
+
+jobs:
+  deploy:
+    name: Deploy frontend to EKS
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    uses: ./.github/workflows/reusable-ecr-push.yml
+    with:
+      # GHCR image name is medicore-hms-ui; Helm values file is helm/values/frontend.yaml.
+      service_name: medicore-hms-ui
+      context_dir: frontend
+      dockerfile: frontend/Dockerfile
+      # The build pushes an image tagged with its commit SHA; use that exact commit.
+      image_tag: ${{ inputs.image_tag || github.event.workflow_run.head_sha }}
+      git_sha: ${{ github.event.workflow_run.head_sha }}
+      ecr_repository: frontend
+    permissions:
+      id-token: write
+      contents: read
+      packages: write

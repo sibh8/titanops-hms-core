@@ -20,6 +20,11 @@ on:
         required: false
         default: ""
         type: string
+      git_sha:
+        description: "Commit SHA the image was built from (defaults to github.sha). Required when triggered via workflow_run, where github.sha is the default-branch HEAD rather than the built commit."
+        required: false
+        default: ""
+        type: string
       ecr_repository:
         description: "ECR repository name suffix under titanops-hms/ (defaults to service_name)"
         required: false
@@ -86,7 +91,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image_tag: ${{ steps.meta.outputs.image_tag }}
-      git_sha: ${{ github.sha }}
+      git_sha: ${{ inputs.git_sha || github.sha }}
       ecr_image_uri: ${{ steps.ecr-push.outputs.ecr_image_uri || steps.meta.outputs.ghcr_image_uri }}
 
     steps:
@@ -99,7 +104,7 @@ jobs:
           set -euo pipefail
           TRACEABLE_TAG="${{ inputs.image_tag }}"
           if [ -z "$TRACEABLE_TAG" ]; then
-            TRACEABLE_TAG="${{ github.sha }}"
+            TRACEABLE_TAG="${{ inputs.git_sha || github.sha }}"
           fi
 
           ECR_SURNAME="${{ inputs.ecr_repository }}"
@@ -112,7 +117,7 @@ jobs:
           echo "image_tag=$TRACEABLE_TAG" >> "$GITHUB_OUTPUT"
           echo "ecr_repo=titanops-hms/$ECR_SURNAME" >> "$GITHUB_OUTPUT"
           echo "ghcr_image_uri=$GHCR_IMAGE" >> "$GITHUB_OUTPUT"
-          echo "Verified traceable image URI: $GHCR_IMAGE (Commit SHA: ${{ github.sha }})"
+          echo "Verified traceable image URI: $GHCR_IMAGE (Commit SHA: ${{ inputs.git_sha || github.sha }})"
 
       - name: Check AWS OIDC Role Configuration
         id: check-aws
@@ -155,7 +160,7 @@ jobs:
           ECR_REPO="${{ steps.meta.outputs.ecr_repo }}"
           SOURCE_IMAGE="${{ steps.meta.outputs.source_image }}"
           SEMVER_TAG="${{ steps.meta.outputs.image_tag }}"
-          SHA_TAG="${{ github.sha }}"
+          SHA_TAG="${{ inputs.git_sha || github.sha }}"
 
           docker pull "$SOURCE_IMAGE"
 

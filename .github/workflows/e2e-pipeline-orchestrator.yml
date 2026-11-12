@@ -1,14 +1,10 @@
 name: End-to-End Pipeline Orchestrator
 
+# NOTE: The automatic workflow_run trigger was removed. Each service now has its
+# own deploy-<service> workflow that is triggered after its build completes.
+# Keeping this trigger would deploy every build a second time (and, because
+# `inputs` is empty on workflow_run, always as appointment-service).
 on:
-  workflow_run:
-    workflows:
-      - "Frontend CI"
-      - "Java CI with Maven"
-    types:
-      - completed
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       service_name:
