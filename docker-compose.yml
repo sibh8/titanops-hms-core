@@ -1,8 +1,11 @@
 version: '3.8'
 
 x-db-env: &db-env
-  # TITANOPS-119: Enforce TLS encryption and server certificate verification against database
-  SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://mysql:3306/medicore_hms?useSSL=true&requireSSL=true&verifyServerCertificate=true&serverTimezone=UTC}
+  # TITANOPS-119: Enforce TLS encryption and server certificate verification against database.
+  # MySQL's auto-generated server cert is signed by its own CA (ca.pem), which the JVM does not
+  # trust by default. The mysql-truststore service imports that CA into a PKCS12 truststore and
+  # Connector/J verifies the server certificate against it.
+  SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://mysql:3306/medicore_hms?useSSL=true&requireSSL=true&verifyServerCertificate=true&trustCertificateKeyStoreUrl=file:/etc/mysql-truststore/mysql-truststore.p12&trustCertificateKeyStoreType=PKCS12&trustCertificateKeyStorePassword=${MYSQL_TRUSTSTORE_PASSWORD:-changeit}&serverTimezone=UTC}
   SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:-medicore}
   SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:-medicore_pass}
   SPRING_JPA_HIBERNATE_DDL_AUTO: ${SPRING_JPA_HIBERNATE_DDL_AUTO:-update}
@@ -12,7 +15,19 @@ x-otel-env: &otel-env
   OTEL_TRACES_EXPORTER: ${OTEL_TRACES_EXPORTER:-otlp}
   OTEL_METRICS_EXPORTER: ${OTEL_METRICS_EXPORTER:-otlp}  
   OTEL_LOGS_EXPORTER: ${OTEL_LOGS_EXPORTER:-otlp}
+  # Port 4317 is the collector's gRPC receiver; the agent defaults to http/protobuf.
+  OTEL_EXPORTER_OTLP_PROTOCOL: ${OTEL_EXPORTER_OTLP_PROTOCOL:-grpc}
   SPRING_AUTOCONFIGURE_EXCLUDE: io.opentelemetry.instrumentation.spring.autoconfigure.OpenTelemetryAutoConfiguration
+
+# Shared by all Spring microservices: wait for MySQL and its CA truststore, mount it read-only.
+x-db-depends: &db-depends
+  mysql:
+    condition: service_healthy
+  mysql-truststore:
+    condition: service_completed_successfully
+
+x-db-volumes: &db-volumes
+  - mysql_truststore:/etc/mysql-truststore:ro
 
 services:
 
@@ -42,6 +57,30 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+
+  # One-shot job: build a JVM truststore from MySQL's auto-generated CA (ca.pem in the data dir)
+  # so the services can keep verifyServerCertificate=true against the local container.
+  mysql-truststore:
+    image: eclipse-temurin:11.0.25_9-jre
+    environment:
+      MYSQL_TRUSTSTORE_PASSWORD: ${MYSQL_TRUSTSTORE_PASSWORD:-changeit}
+    volumes:
+      - mysql_data:/mysql-data:ro
+      - mysql_truststore:/truststore
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        set -e
+        rm -f /truststore/mysql-truststore.p12
+        keytool -importcert -noprompt -alias mysql-ca \
+          -file /mysql-data/ca.pem \
+          -keystore /truststore/mysql-truststore.p12 -storetype PKCS12 \
+          -storepass "$$MYSQL_TRUSTSTORE_PASSWORD"
+        chmod 644 /truststore/mysql-truststore.p12
+        echo "MySQL CA truststore created"
+    depends_on:
+      mysql:
+        condition: service_healthy
 
   # ─── Observability ─────────────────────────────────────────────────────────
   jaeger:
@@ -96,9 +135,8 @@ services:
     environment:
       <<: [*db-env, *otel-env]
       OTEL_SERVICE_NAME: patient-service
-    depends_on:
-      mysql:
-        condition: service_healthy
+    volumes: *db-volumes
+    depends_on: *db-depends
 
   appointment-service:
     build: ./appointment-service
@@ -107,9 +145,8 @@ services:
     environment:
       <<: [*db-env, *otel-env]
       OTEL_SERVICE_NAME: appointment-service
-    depends_on:
-      mysql:
-        condition: service_healthy
+    volumes: *db-volumes
+    depends_on: *db-depends
 
   user-service:
     build: ./user-service
@@ -118,9 +155,8 @@ services:
     environment:
       <<: [*db-env, *otel-env]
       OTEL_SERVICE_NAME: user-service
-    depends_on:
-      mysql:
-        condition: service_healthy
+    volumes: *db-volumes
+    depends_on: *db-depends
 
   billing-service:
     build: ./billing-service
@@ -129,9 +165,8 @@ services:
     environment:
       <<: [*db-env, *otel-env]
       OTEL_SERVICE_NAME: billing-service
-    depends_on:
-      mysql:
-        condition: service_healthy
+    volumes: *db-volumes
+    depends_on: *db-depends
 
   encounter-service:
     build: ./encounter-service
@@ -140,9 +175,8 @@ services:
     environment:
       <<: [*db-env, *otel-env]
       OTEL_SERVICE_NAME: encounter-service
-    depends_on:
-      mysql:
-        condition: service_healthy
+    volumes: *db-volumes
+    depends_on: *db-depends
 
   lab-service:
     build: ./lab-service
@@ -151,9 +185,8 @@ services:
     environment:
       <<: [*db-env, *otel-env]
       OTEL_SERVICE_NAME: lab-service
-    depends_on:
-      mysql:
-        condition: service_healthy
+    volumes: *db-volumes
+    depends_on: *db-depends
 
   medication-service:
     build: ./medication-service
@@ -162,9 +195,8 @@ services:
     environment:
       <<: [*db-env, *otel-env]
       OTEL_SERVICE_NAME: medication-service
-    depends_on:
-      mysql:
-        condition: service_healthy
+    volumes: *db-volumes
+    depends_on: *db-depends
 
   prescription-service:
     build: ./prescription-service
@@ -173,9 +205,8 @@ services:
     environment:
       <<: [*db-env, *otel-env]
       OTEL_SERVICE_NAME: prescription-service
-    depends_on:
-      mysql:
-        condition: service_healthy
+    volumes: *db-volumes
+    depends_on: *db-depends
 
   provider-service:
     build: ./provider-service
@@ -184,9 +215,8 @@ services:
     environment:
       <<: [*db-env, *otel-env]
       OTEL_SERVICE_NAME: provider-service
-    depends_on:
-      mysql:
-        condition: service_healthy
+    volumes: *db-volumes
+    depends_on: *db-depends
 
   # ─── Frontend ────────────────────────────────────────────────────────────────
   medicore-hms-ui:
@@ -205,10 +235,12 @@ services:
       - prescription-service
       - provider-service
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost/health"]
+      # 127.0.0.1, not localhost: busybox wget resolves localhost to ::1 but nginx listens on IPv4 only
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/health"]
       interval: 30s
       timeout: 5s
       retries: 3
 
 volumes:
   mysql_data:
+  mysql_truststore:
