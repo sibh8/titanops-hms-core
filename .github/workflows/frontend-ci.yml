@@ -1,4 +1,4 @@
-name: Frontend CI
+name: frontend
 
 on:
   push:
@@ -181,19 +181,5 @@ jobs:
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
 
-
-  deploy:
-    name: Deploy to EKS
-    needs: docker
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-    uses: ./.github/workflows/reusable-ecr-push.yml
-    with:
-      service_name: medicore-hms-ui
-      context_dir: frontend
-      dockerfile: frontend/Dockerfile
-      image_tag: ${{ needs.docker.outputs.image_tag }}
-      ecr_repository: frontend
-    permissions:
-      id-token: write
-      contents: read
-      packages: write
+  # Deployment is handled by the separate deploy-* workflow, which is triggered
+  # automatically when this build workflow completes successfully on main.

@@ -1,4 +1,4 @@
-name: Java CI with Maven
+name: prescription-service
 
 on:
   push:
@@ -130,19 +130,5 @@ jobs:
         vuln-type: 'os,library'
         severity: 'CRITICAL,HIGH'
 
-
-  deploy:
-    name: Deploy to EKS
-    needs: build
-    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
-    uses: ./.github/workflows/reusable-ecr-push.yml
-    with:
-      service_name: prescription-service
-      context_dir: prescription-service
-      dockerfile: prescription-service/Dockerfile
-      image_tag: ${{ needs.build.outputs.image_tag }}
-      ecr_repository: prescription-service
-    permissions:
-      id-token: write
-      contents: read
-      packages: write
+  # Deployment is handled by the separate deploy-* workflow, which is triggered
+  # automatically when this build workflow completes successfully on main.
