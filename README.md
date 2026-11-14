@@ -496,3 +496,72 @@ Capture real screenshots or logs for each stage. Clearly label anything that is 
 ---
 
 **Document note:** This README is a navigation and explanation guide based on the uploaded project archive and its accompanying capstone brief. It does not claim that the project was executed or that all pipelines/cloud resources have been independently verified.
+
+---
+
+## 13. Proof of Implementation (Live Amazon EKS & AWS RDS Deployment)
+
+All 10 workloads (**React/Nginx frontend** behind an AWS NLB + **9 Spring Boot microservices** connected to **AWS RDS MySQL 8.0.46**) along with **Prometheus**, **Grafana**, and **Jaeger + OpenTelemetry Collector** were deployed and verified live on Amazon EKS (`ap-south-1`, `titanops-dev-eks`).
+
+For cluster creation, deployment, and verification logs, refer to [screenshots and logs/](screenshots%20and%20logs/).
+
+### 13.1 MediCore HMS Frontend (`frontend`)
+
+![MediCore HMS Frontend Dashboard](screenshots%20and%20logs/01-frontend-dashboard.png)
+
+### 13.2 Patient Service (`patient-service`)
+
+![Patient Service UI](screenshots%20and%20logs/02-patient-service.png)
+
+### 13.3 Appointment Service (`appointment-service`)
+
+![Appointment Service UI](screenshots%20and%20logs/03-appointment-service.png)
+
+### 13.4 Encounter Service (`encounter-service`)
+
+![Encounter Service UI](screenshots%20and%20logs/04-encounter-service.png)
+
+### 13.5 Lab Service (`lab-service`)
+
+![Lab Service UI](screenshots%20and%20logs/05-lab-service.png)
+
+### 13.6 Medication Service (`medication-service`)
+
+![Medication Service UI](screenshots%20and%20logs/06-medication-service.png)
+
+### 13.7 Prescription Service (`prescription-service`)
+
+![Prescription Service UI](screenshots%20and%20logs/07-prescription-service.png)
+
+### 13.8 Billing Service (`billing-service`)
+
+![Billing Service UI](screenshots%20and%20logs/08-billing-service.png)
+
+### 13.9 Provider Service (`provider-service`)
+
+![Provider Service UI](screenshots%20and%20logs/09-provider-service.png)
+
+### 13.10 User Service (`user-service`)
+
+![User Service UI](screenshots%20and%20logs/10-user-service.png)
+
+### 13.11 Prometheus — All 9 Microservices Up
+
+![Prometheus Targets Up](screenshots%20and%20logs/11-prometheus-targets-up.png)
+
+### 13.12 Prometheus — HTTP Request Rate Across Microservices
+
+![Prometheus HTTP Request Rate](screenshots%20and%20logs/12-prometheus-http-request-rate.png)
+
+### 13.13 Prometheus — JVM CPU Usage
+
+![Prometheus JVM CPU Usage](screenshots%20and%20logs/13-prometheus-jvm-cpu-usage.png)
+
+### 13.14 Jaeger — Distributed Tracing (`encounter-service`)
+
+![Jaeger Distributed Tracing](screenshots%20and%20logs/14-jaeger-distributed-tracing.png)
+
+### 13.15 Grafana — MediCore HMS Functional Dashboard
+
+![Grafana MediCore HMS Functional Dashboard](screenshots%20and%20logs/15-grafana-functional-dashboard.png)
+
