@@ -1,0 +1,233 @@
+# =============================================================================
+# TitanOps HMS - Observability, ECR Image Build/Push & K8s Manifest Deploy Log
+# =============================================================================
+
+--- [1/3] Namespace hms, ServiceAccounts, Jaeger & OpenTelemetry Collector ---
+NAME   STATUS   AGE
+hms    Active   46s
+NAME                      AGE
+appointment-service-sa    53s
+billing-service-sa        50s
+default                   56s
+encounter-service-sa      48s
+frontend-sa               41s
+lab-service-sa            47s
+medication-service-sa     44s
+patient-service-sa        54s
+prescription-service-sa   43s
+provider-service-sa       42s
+user-service-sa           52s
+deployment.apps/jaeger created
+service/jaeger created
+configmap/otel-collector-config created
+deployment.apps/otel-collector created
+service/otel-collector created
+error: resource mapping not found for name: "" namespace: "" from "k8s/observability/kustomization.yaml": no matches for kind "Kustomization" in version "kustomize.config.k8s.io/v1beta1"
+ensure CRDs are installed first
+
+
+--- [2/3] Namespace monitoring, Prometheus & Grafana Stack ---
+namespace/monitoring created
+namespace/monitoring configured
+serviceaccount/prometheus-k8s created
+clusterrole.rbac.authorization.k8s.io/prometheus-k8s created
+clusterrolebinding.rbac.authorization.k8s.io/prometheus-k8s created
+configmap/prometheus-config created
+service/prometheus created
+deployment.apps/prometheus created
+configmap/grafana-dashboard-providers created
+configmap/grafana-dashboards-app-health created
+configmap/grafana-dashboards-imported created
+configmap/grafana-datasources created
+service/grafana created
+deployment.apps/grafana created
+NAME                         READY   STATUS              RESTARTS   AGE
+grafana-8449dc5b6f-ppq7z     0/1     ContainerCreating   0          5s
+prometheus-955b5cdb4-zwkc7   1/1     Running             0          29s
+
+
+--- [3/3] Docker Image Builds, ECR Pushes & Kubernetes Deployments (10 Services) ---
+deployment.apps/patient-service created
+service/patient-service created
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/frontend]
+62c3fe4afcdd: Pushed
+44136fa355b3: Pushed
+e6ef242c1570: Pushed
+13fcfbc94648: Pushed
+d4bca490e609: Pushed
+8a3742a9529d: Pushed
+fc21a1d387f5: Pushed
+5038b01ad644: Pushed
+81e7a66597f6: Pushed
+5d58871464b8: Pushed
+6f05aa711051: Pushed
+5406ed7b06d9: Pushed
+bb290defb94f: Pushed
+09d3f6ce131e: Pushed
+4abcf2066143: Pushed
+0d0c16747d2c: Pushed
+latest: digest: sha256:a74c981d5275bdc2c0c72ca8c9a37f536b469cb26aba1b6dadbfad4d75abccef size: 856
+deployment.apps/frontend created
+service/frontend created
+Warning: annotation "kubernetes.io/ingress.class" is deprecated, please use 'spec.ingressClassName' instead
+ingress.networking.k8s.io/frontend-ingress created
+=== Pushing user-service ===
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/user-service]
+44136fa355b3: Already exists
+f6e4778f7e4a: Pushed
+failed commit on ref "layer-sha256:f9564cb9274e8929ebc494923d742561b11e47200a7d235b601bf398770ef5a8": failed to do request: Put "https://116715028929.dkr.ecr.ap-south-1.amazonaws.com/v2/medicore/user-service/blobs/uploads/aa15a265-7947-32d0-8f41-61c32c38e926?digest=sha256%3Af9564cb9274e8929ebc494923d742561b11e47200a7d235b601bf398770ef5a8": net/http: timeout awaiting response headers
+Retry 1 for user-service...
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/user-service]
+f6e4778f7e4a: Already exists
+44136fa355b3: Already exists
+f99002ba4218: Pushed
+f1d515849180: Pushed
+latest: digest: sha256:0b6ecfce4b2d45853dfba3c2a2a3017cd8fb3bd9b7705f898e729f8c8d80414b size: 856
+deployment.apps/user-service created
+service/user-service created
+✓ user-service pushed and deployed
+=== Pushing appointment-service ===
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/appointment-service]
+44136fa355b3: Already exists
+477d531bc879: Already exists
+de44b265507a: Pushed
+d4e26cf70432: Pushed
+f99002ba4218: Pushed
+latest: digest: sha256:4e7b701950ad8c7f95f022eeea93da51a307874cbd1151973a5ada102e998409 size: 856
+deployment.apps/appointment-service created
+service/appointment-service created
+✓ appointment-service pushed and deployed
+=== Pushing billing-service ===
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/billing-service]
+44136fa355b3: Pushed
+cfc69ed02c8c: Pushed
+bb6f57fb2606: Pushed
+4002b7ea754a: Pushed
+2ab379d735eb: Pushed
+00f7b48a89df: Pushed
+4f4fb700ef54: Pushed
+failed commit on ref "layer-sha256:de44b265507ae44b212defcb50694d666f136b35c1090d9709068bc861bb2d64": failed to do request: Put "https://116715028929.dkr.ecr.ap-south-1.amazonaws.com/v2/medicore/billing-service/blobs/uploads/ba9c6c57-a55f-390c-a915-ba215ed72c2e?digest=sha256%3Ade44b265507ae44b212defcb50694d666f136b35c1090d9709068bc861bb2d64": net/http: timeout awaiting response headers
+Retry 1 for billing-service...
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/billing-service]
+cfc69ed02c8c: Already exists
+44136fa355b3: Already exists
+f9564cb9274e: Pushed
+f99002ba4218: Pushed
+4e797525da65: Pushed
+latest: digest: sha256:59669d2b19a0c57ee407fcdeb35676c91a33ed08d715d352867469395f16c7ad size: 856
+deployment.apps/billing-service created
+service/billing-service created
+✓ billing-service pushed and deployed
+=== Pushing encounter-service ===
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/encounter-service]
+44136fa355b3: Pushed
+1c8bc5468da8: Pushed
+bb6f57fb2606: Pushed
+4002b7ea754a: Pushed
+00f7b48a89df: Pushed
+2ab379d735eb: Pushed
+4f4fb700ef54: Pushed
+failed commit on ref "layer-sha256:c94a7ae980e1fc94f3958cfff7f1cb785f1728135b8b97a4d191bc8ab689b888": failed to do request: Put "https://116715028929.dkr.ecr.ap-south-1.amazonaws.com/v2/medicore/encounter-service/blobs/uploads/a6fd6447-df3a-3715-80bf-baa34b9768c1?digest=sha256%3Ac94a7ae980e1fc94f3958cfff7f1cb785f1728135b8b97a4d191bc8ab689b888": net/http: timeout awaiting response headers
+Retry 1 for encounter-service...
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/encounter-service]
+44136fa355b3: Already exists
+1c8bc5468da8: Already exists
+f9564cb9274e: Pushed
+82e1c59108df: Pushed
+failed commit on ref "layer-sha256:de44b265507ae44b212defcb50694d666f136b35c1090d9709068bc861bb2d64": failed to do request: Put "https://116715028929.dkr.ecr.ap-south-1.amazonaws.com/v2/medicore/encounter-service/blobs/uploads/78dfce84-a783-3079-8a73-6eeb337a9401?digest=sha256%3Ade44b265507ae44b212defcb50694d666f136b35c1090d9709068bc861bb2d64": net/http: timeout awaiting response headers
+Retry 2 for encounter-service...
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/encounter-service]
+1c8bc5468da8: Already exists
+44136fa355b3: Already exists
+f99002ba4218: Pushed
+latest: digest: sha256:321483e6498f9888463cd2ad11c072bc2cddaaaade3e5c706de18044dc6d2dfc size: 856
+deployment.apps/encounter-service created
+service/encounter-service created
+✓ encounter-service pushed and deployed
+=== Pushing lab-service ===
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/lab-service]
+44136fa355b3: Pushed
+0cbcd22f2eb5: Pushed
+bb6f57fb2606: Pushed
+2ab379d735eb: Pushed
+00f7b48a89df: Pushed
+4002b7ea754a: Pushed
+4f4fb700ef54: Pushed
+failed commit on ref "layer-sha256:de44b265507ae44b212defcb50694d666f136b35c1090d9709068bc861bb2d64": failed to do request: Put "https://116715028929.dkr.ecr.ap-south-1.amazonaws.com/v2/medicore/lab-service/blobs/uploads/4cb9584a-b2d9-310c-adae-ba3397bc178d?digest=sha256%3Ade44b265507ae44b212defcb50694d666f136b35c1090d9709068bc861bb2d64": net/http: timeout awaiting response headers
+Retry 1 for lab-service...
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/lab-service]
+44136fa355b3: Already exists
+0cbcd22f2eb5: Already exists
+c94a7ae980e1: Pushed
+f9564cb9274e: Pushed
+4fb76500de01: Pushed
+f99002ba4218: Pushed
+latest: digest: sha256:5a6f765a29a2b19a99f677f4e07f265e4027744ade237694f1079eb00f38d713 size: 856
+deployment.apps/lab-service created
+service/lab-service created
+✓ lab-service pushed and deployed
+=== Pushing medication-service ===
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/medication-service]
+0fe35eccd59a: Pushed
+44136fa355b3: Pushed
+bb6f57fb2606: Pushed
+2ab379d735eb: Pushed
+4002b7ea754a: Pushed
+00f7b48a89df: Pushed
+4f4fb700ef54: Pushed
+failed commit on ref "layer-sha256:c94a7ae980e1fc94f3958cfff7f1cb785f1728135b8b97a4d191bc8ab689b888": failed to do request: Put "https://116715028929.dkr.ecr.ap-south-1.amazonaws.com/v2/medicore/medication-service/blobs/uploads/3289037f-f6e1-352e-827d-234e008bcc29?digest=sha256%3Ac94a7ae980e1fc94f3958cfff7f1cb785f1728135b8b97a4d191bc8ab689b888": net/http: timeout awaiting response headers
+Retry 1 for medication-service...
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/medication-service]
+0fe35eccd59a: Already exists
+44136fa355b3: Already exists
+f9564cb9274e: Pushed
+7c27932cb27f: Pushed
+failed commit on ref "layer-sha256:de44b265507ae44b212defcb50694d666f136b35c1090d9709068bc861bb2d64": failed to do request: Put "https://116715028929.dkr.ecr.ap-south-1.amazonaws.com/v2/medicore/medication-service/blobs/uploads/e5420add-d5a0-3437-a59a-4875daa6feeb?digest=sha256%3Ade44b265507ae44b212defcb50694d666f136b35c1090d9709068bc861bb2d64": net/http: timeout awaiting response headers
+Retry 2 for medication-service...
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/medication-service]
+0fe35eccd59a: Already exists
+44136fa355b3: Already exists
+latest: digest: sha256:51c870632cc7576093ab71c8e0a182cb92e42dbd86216beb9fab2568d434cfca size: 856
+deployment.apps/medication-service created
+service/medication-service created
+✓ medication-service pushed and deployed
+=== Pushing prescription-service ===
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/prescription-service]
+44136fa355b3: Pushed
+15933bd83248: Pushed
+4002b7ea754a: Pushed
+bb6f57fb2606: Pushed
+2ab379d735eb: Pushed
+00f7b48a89df: Pushed
+4f4fb700ef54: Pushed
+c94a7ae980e1: Pushed
+f9564cb9274e: Pushed
+de44b265507a: Pushed
+bf78a6dcf40e: Pushed
+f99002ba4218: Pushed
+latest: digest: sha256:46df18974bb3504271b2553590605bf88e725842cfa0594f4c23e701f1476c36 size: 856
+deployment.apps/prescription-service created
+service/prescription-service created
+✓ prescription-service pushed and deployed
+=== Pushing provider-service ===
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/provider-service]
+dfb65a807939: Pushed
+44136fa355b3: Pushed
+4002b7ea754a: Pushed
+bb6f57fb2606: Pushed
+2ab379d735eb: Pushed
+00f7b48a89df: Pushed
+4f4fb700ef54: Pushed
+c94a7ae980e1: Pushed
+f9564cb9274e: Pushed
+failed commit on ref "layer-sha256:2b4ec93e3a9b1a6a89bb61313db2cd61121c91508fc1aa690dc64623dd878044": failed to do request: Put "https://116715028929.dkr.ecr.ap-south-1.amazonaws.com/v2/medicore/provider-service/blobs/uploads/1a4d02a3-e1c8-35c9-9f49-2acc406d064f?digest=sha256%3A2b4ec93e3a9b1a6a89bb61313db2cd61121c91508fc1aa690dc64623dd878044": net/http: timeout awaiting response headers
+Retry 1 for provider-service...
+The push refers to repository [116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/provider-service]
+dfb65a807939: Already exists
+44136fa355b3: Already exists
+f99002ba4218: Pushed
+de44b265507a: Pushed
+latest: digest: sha256:0a9d725581358c1910ed0b47e9e97bb6c30288369df2da7068ee9517b699bcec size: 856
+deployment.apps/provider-service created
+service/provider-service created
+✓ provider-service pushed and deployed

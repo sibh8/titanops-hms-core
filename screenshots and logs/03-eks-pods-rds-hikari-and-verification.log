@@ -1,0 +1,153 @@
+# =============================================================================
+# TitanOps HMS - Rollout, NLB Health Checks, Prometheus, Grafana & Jaeger Log
+# =============================================================================
+
+--- [1/5] HikariCP Pool Tuning & All 9 Microservices + Frontend Rollout ---
+secret/titanops-datasource-credentials configured
+pod "appointment-service-54945bbdd8-qnptk" deleted from hms namespace
+pod "billing-service-69d88b765d-75nl9" deleted from hms namespace
+pod "encounter-service-b745cc497-4ljc5" deleted from hms namespace
+pod "lab-service-57d65d644-z28wm" deleted from hms namespace
+pod "medication-service-75dfb8985-rxjbh" deleted from hms namespace
+pod "patient-service-6c8f668869-mtwns" deleted from hms namespace
+pod "prescription-service-6ddd64769d-bxs96" deleted from hms namespace
+pod "provider-service-fb74b79-8699d" deleted from hms namespace
+pod "user-service-54c88d9cd9-j8c22" deleted from hms namespace
+Waiting for deployment "patient-service" rollout to finish: 0 of 1 updated replicas are available...
+deployment "patient-service" successfully rolled out
+Waiting for deployment "appointment-service" rollout to finish: 0 of 1 updated replicas are available...
+deployment "appointment-service" successfully rolled out
+deployment "user-service" successfully rolled out
+deployment "billing-service" successfully rolled out
+deployment "encounter-service" successfully rolled out
+deployment "lab-service" successfully rolled out
+deployment "medication-service" successfully rolled out
+deployment "prescription-service" successfully rolled out
+deployment "provider-service" successfully rolled out
+=== FINAL HMS PODS ===
+NAME                                    READY   STATUS    RESTARTS   AGE   IP            NODE                                         NOMINATED NODE   READINESS GATES
+appointment-service-54945bbdd8-2jzqx    1/1     Running   0          78s   10.0.11.116   ip-10-0-11-183.ap-south-1.compute.internal   <none>           <none>
+billing-service-69d88b765d-k77qh        1/1     Running   0          78s   10.0.12.174   ip-10-0-12-85.ap-south-1.compute.internal    <none>           <none>
+encounter-service-b745cc497-p6k6h       1/1     Running   0          78s   10.0.11.134   ip-10-0-11-183.ap-south-1.compute.internal   <none>           <none>
+frontend-5b6fb7bc79-np2dq               1/1     Running   0          43m   10.0.11.109   ip-10-0-11-183.ap-south-1.compute.internal   <none>           <none>
+jaeger-dcc4dd65f-2spkg                  1/1     Running   0          52m   10.0.11.169   ip-10-0-11-183.ap-south-1.compute.internal   <none>           <none>
+lab-service-57d65d644-sqw6d             1/1     Running   0          78s   10.0.12.46    ip-10-0-12-85.ap-south-1.compute.internal    <none>           <none>
+medication-service-75dfb8985-6gl7l      1/1     Running   0          77s   10.0.11.203   ip-10-0-11-183.ap-south-1.compute.internal   <none>           <none>
+otel-collector-ddfd68c59-hmr52          1/1     Running   0          52m   10.0.11.89    ip-10-0-11-183.ap-south-1.compute.internal   <none>           <none>
+patient-service-6c8f668869-7vrvl        1/1     Running   0          77s   10.0.11.215   ip-10-0-11-183.ap-south-1.compute.internal   <none>           <none>
+prescription-service-6ddd64769d-dnhd9   1/1     Running   0          77s   10.0.12.137   ip-10-0-12-85.ap-south-1.compute.internal    <none>           <none>
+provider-service-fb74b79-9656g          1/1     Running   0          77s   10.0.11.138   ip-10-0-11-183.ap-south-1.compute.internal   <none>           <none>
+user-service-54c88d9cd9-nbd2n           1/1     Running   0          77s   10.0.12.69    ip-10-0-12-85.ap-south-1.compute.internal    <none>           <none>
+
+
+--- [2/5] Public NLB Health Endpoint Smoke Test (Frontend + All 9 Microservices) ---
+frontend (/health): healthy
+ [HTTP 200]
+patient-service: {"status":"UP","groups":["liveness","readiness"]} [HTTP 200]
+appointment-service: {"status":"UP","groups":["liveness","readiness"]} [HTTP 200]
+user-service: {"status":"UP","groups":["liveness","readiness"]} [HTTP 200]
+billing-service: {"status":"UP","groups":["liveness","readiness"]} [HTTP 200]
+encounter-service: {"status":"UP","groups":["liveness","readiness"]} [HTTP 200]
+lab-service: {"status":"UP","groups":["liveness","readiness"]} [HTTP 200]
+medication-service: {"status":"UP","groups":["liveness","readiness"]} [HTTP 200]
+prescription-service: {"status":"UP","groups":["liveness","readiness"]} [HTTP 200]
+provider-service: {"status":"UP","groups":["liveness","readiness"]} [HTTP 200]
+
+--- [3/5] Kubernetes Services, Grafana Health & RDS Instance Status ---
+Command exited with code 0.
+
+Command output:
+NAME                   TYPE           CLUSTER-IP       EXTERNAL-IP                                                                      PORT(S)                                           AGE
+appointment-service    ClusterIP      172.20.238.38    <none>                                                                           8082/TCP                                          38m
+billing-service        ClusterIP      172.20.96.195    <none>                                                                           8084/TCP                                          33m
+encounter-service      ClusterIP      172.20.20.221    <none>                                                                           8085/TCP                                          26m
+frontend               LoadBalancer   172.20.170.49    ac920ad6c58d0432fbcd6e642d37fefa-46a050d1ce166fae.elb.ap-south-1.amazonaws.com   80:30352/TCP                                      45m
+jaeger                 ClusterIP      172.20.196.31    <none>                                                                           16686/TCP,4317/TCP,4318/TCP,14250/TCP,14268/TCP   54m
+lab-service            ClusterIP      172.20.59.65     <none>                                                                           8086/TCP                                          21m
+medication-service     ClusterIP      172.20.75.171    <none>                                                                           8087/TCP                                          16m
+otel-collector         ClusterIP      172.20.48.28     <none>                                                                           4317/TCP,4318/TCP,8889/TCP,13133/TCP              54m
+patient-service        ClusterIP      172.20.21.198    <none>                                                                           8081/TCP                                          46m
+prescription-service   ClusterIP      172.20.139.126   <none>                                                                           8088/TCP                                          12m
+provider-service       ClusterIP      172.20.18.106    <none>                                                                           8089/TCP                                          7m16s
+user-service           ClusterIP      172.20.62.193    <none>                                                                           8083/TCP                                          40m
+=== GRAFANA HEALTH ===
+{
+  "commit": "d94d597d847c05085542c29dfad6b3f469cc77e1",
+  "database": "ok",
+  "version": "10.4.1"
+}
+=== RDS STATUS ===
+------------------------------------------------------------------------------
+|                             DescribeDBInstances                            |
++----------+-----------------------------------------------------------------+
+|  Class   |  db.t3.micro                                                    |
+|  Endpoint|  titanops-dev-mysql.cjg06o42uy2x.ap-south-1.rds.amazonaws.com   |
+|  Engine  |  8.0.46                                                         |
+|  MultiAZ |  False                                                          |
+|  Port    |  3306                                                           |
+|  Status  |  available                                                      |
++----------+-----------------------------------------------------------------+
+
+
+--- [4/5] Prometheus Active Targets ---
+Command exited with code 0.
+
+Command output:
+appointment-service | appointment-service.hms.svc.cluster.local:8083 | down | Get "http://appointment-service.hms.svc.cluster.local:8083/actuator/prometheus": context deadline exceeded
+billing-service | billing-service.hms.svc.cluster.local:8086 | down | Get "http://billing-service.hms.svc.cluster.local:8086/actuator/prometheus": context deadline exceeded
+encounter-service | encounter-service.hms.svc.cluster.local:8085 | up | 
+github-actions-exporter | github-actions-exporter.monitoring.svc.cluster.local:9999 | down | Get "http://github-actions-exporter.monitoring.svc.cluster.local:9999/metrics": dial tcp: lookup github-actions-exporter.monitoring.svc.cluster.local on 172.20.0.10:53: no such host
+kubernetes-apiservers | 10.0.11.243:443 | up | 
+kubernetes-apiservers | 10.0.12.51:443 | up | 
+kubernetes-cadvisor | ip-10-0-12-85.ap-south-1.compute.internal | up | 
+kubernetes-cadvisor | ip-10-0-11-183.ap-south-1.compute.internal | up | 
+kubernetes-nodes | ip-10-0-11-183.ap-south-1.compute.internal | up | 
+
+kubernetes-nodes | ip-10-0-12-85.ap-south-1.compute.internal | up | 
+kubernetes-service-endpoints | 10.0.12.139:9153 | up | 
+kubernetes-service-endpoints | 10.0.11.134:8085 | up | 
+kubernetes-service-endpoints | 10.0.12.137:8089 | down | Get "http://10.0.12.137:8089/actuator/prometheus": dial tcp 10.0.12.137:8089: connect: connection refused
+kubernetes-service-endpoints | 10.0.12.105:9153 | up | 
+kubernetes-service-endpoints | 10.0.12.69:8082 | down | Get "http://10.0.12.69:8082/actuator/prometheus": dial tcp 10.0.12.69:8082: connect: connection refused
+kubernetes-service-endpoints | 10.0.12.174:8086 | down | Get "http://10.0.12.174:8086/actuator/prometheus": dial tcp 10.0.12.174:8086: connect: connection refused
+kubernetes-service-endpoints | 10.0.11.138:8084 | down | Get "http://10.0.11.138:8084/actuator/prometheus": dial tcp 10.0.11.138:8084: connect: connection refused
+kubernetes-service-endpoints | 10.0.11.215:8081 | up | 
+kubernetes-service-endpoints | 10.0.11.203:8088 | down | Get "http://10.0.11.203:8088/actuator/prometheus": dial tcp 10.0.11.203:8088: connect: connection refused
+kubernetes-service-endpoints | 10.0.11.116:8083 | down | Get "http://10.0.11.116:8083/actuator/prometheus": dial tcp 10.0.11.116:8083: connect: connection refused
+kubernetes-service-endpoints | 10.0.12.46:8087 | down | Get "http://10.0.12.46:8087/actuator/prometheus": dial tcp 10.0.12.46:8087: connect: connection refused
+lab-service | lab-service.hms.svc.cluster.local:8087 | down | Get "http://lab-service.hms.svc.cluster.local:8087/actuator/prometheus": context deadline exceeded
+medication-service | medication-service.hms.svc.cluster.local:8088 | down | Get "http://medication-service.hms.svc.cluster.local:8088/actuator/prometheus": context deadline exceeded
+otel-collector | otel-collector.hms.svc.cluster.local:8889 | up | 
+patient-service | patient-service.hms.svc.cluster.local:8081 | up | 
+prescription-service | prescription-service.hms.svc.cluster.local:8089 | down | Get "http://prescription-service.hms.svc.cluster.local:8089/actuator/prometheus": context deadline exceeded
+prometheus | localhost:9090 | up | 
+provider-service | provider-service.hms.svc.cluster.local:8084 | down | Get "http://provider-service.hms.svc.cluster.local:8084/actuator/prometheus": context deadline exceeded
+pushgateway | pushgateway.monitoring.svc.cluster.local:9091 | down | Get "http://pushgateway.monitoring.svc.cluster.local:9091/metrics": dial tcp: lookup pushgateway.monitoring.svc.cluster.local on 172.20.0.10:53: no such host
+titanops-microservices-sd | lab-service | up | 
+titanops-microservices-sd | encounter-service | up | 
+titanops-microservices-sd | medication-service | up | 
+titanops-microservices-sd | prescription-service | up | 
+titanops-microservices-sd | patient-service | up | 
+titanops-microservices-sd | user-service | up | 
+titanops-microservices-sd | appointment-service | up | 
+titanops-microservices-sd | billing-service | up | 
+titanops-microservices-sd | provider-service | up | 
+user-service | user-service.hms.svc.cluster.local:8082 | down | Get "http://user-service.hms.svc.cluster.local:8082/actuator/prometheus": context deadline exceeded
+
+
+--- [5/5] Jaeger Traces & OTel Metrics Verification ---
+Command exited with code 0.
+
+Command output:
+traces in patient-service: 5
+=== TEST SAMPLE HTTP RATE QUERY IN PROMETHEUS ===
+10 series
+
+deployment.apps/grafana restarted
+Waiting for deployment "grafana" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "grafana" rollout to finish: 1 old replicas are pending termination...
+deployment "grafana" successfully rolled out
+=== CHECK OTEL JVM/HTTP METRICS ===
+process_runtime_jvm_memory_usage_bytes: 72 series
+http_server_duration_milliseconds_count: 38 series
+process_runtime_jvm_cpu_utilization_ratio: 9 series
