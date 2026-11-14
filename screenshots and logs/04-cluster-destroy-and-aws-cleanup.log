@@ -1,0 +1,219 @@
+# =============================================================================
+# TitanOps HMS - Complete Cluster & AWS Resource Teardown Verification Log
+# =============================================================================
+
+--- [1/4] Kubernetes Workload/LB Cleanup, Manual SG Rule Revoke & ECR Purge ---
+=== CHECK S3 BUCKET CREATION DATES ===
+------------------------------------------------------------------------
+|                              ListBuckets                             |
++----------------------------+-----------------------------------------+
+|        CreationDate        |                  Name                   |
++----------------------------+-----------------------------------------+
+|  2026-11-12T04:41:27+00:00 |  titanops-dev-cloudtrail-116715028929   |
+|  2026-11-02T18:03:03+00:00 |  titanops-terraform-state-116715028929  |
++----------------------------+-----------------------------------------+
+=== 1. DELETE K8S LOADBALANCER & NAMESPACES ===
+service "frontend" deleted from hms namespace
+namespace "hms" deleted
+namespace "monitoring" deleted
+=== WAIT FOR NLB CLEANUP IN AWS ===
+All ELB/NLB load balancers deleted.
+=== 2. REVOKE MANUAL RDS SG RULE ===
+{
+    "Return": true,
+    "RevokedSecurityGroupRules": [
+        {
+            "SecurityGroupRuleId": "sgr-0ca210b1aa1c3a509",
+            "GroupId": "sg-065886324e877c405",
+            "IsEgress": false,
+            "IpProtocol": "tcp",
+            "FromPort": 3306,
+            "ToPort": 3306,
+            "ReferencedGroupId": "sg-05f381c37e8b0fb1a"
+        }
+    ]
+}
+=== 3. EMPTY ALL ECR REPOSITORIES ===
+Deleting images in medicore/provider-service...
+Deleting images in medicore/lab-service...
+Deleting images in medicore/billing-service...
+Deleting images in medicore/frontend...
+Deleting images in medicore/patient-service...
+Deleting images in medicore/medication-service...
+Deleting images in medicore/appointment-service...
+Deleting images in medicore/encounter-service...
+Deleting images in medicore/user-service...
+Deleting images in medicore/prescription-service...
+ECR cleanup complete.
+
+
+--- [2/4] Terraform Destroy (EKS, RDS, VPC, NAT, Bastion, CloudTrail, IAM, KMS) ---
+module.ecr.aws_ecr_lifecycle_policy.services["medicore/medication-service"]: Destruction complete after 1s
+module.ecr.aws_ecr_lifecycle_policy.services["medicore/provider-service"]: Destruction complete after 1s
+module.ecr.aws_ecr_lifecycle_policy.services["medicore/encounter-service"]: Destruction complete after 1s
+module.secrets.aws_secretsmanager_secret_version.database: Destruction complete after 1s
+module.networking.aws_route_table_association.public[0]: Destruction complete after 2s
+module.networking.aws_route_table_association.private[1]: Destruction complete after 1s
+module.networking.aws_route.public_internet: Destruction complete after 2s
+module.networking.aws_flow_log.main[0]: Destruction complete after 0s
+module.irsa.aws_iam_role_policy_attachment.lab: Destruction complete after 2s
+module.irsa.aws_iam_role_policy_attachment.provider: Destruction complete after 2s
+module.rds.aws_kms_alias.rds[0]: Destruction complete after 2s
+module.ecr.aws_ecr_lifecycle_policy.services["medicore/lab-service"]: Destruction complete after 0s
+module.ecr.aws_ecr_lifecycle_policy.services["medicore/billing-service"]: Destruction complete after 0s
+module.networking.aws_route.private_nat[1]: Destruction complete after 0s
+module.irsa.aws_iam_role_policy_attachment.user: Destruction complete after 0s
+module.secrets.aws_iam_role_policy_attachment.external_secrets: Destruction complete after 2s
+module.security_alerts.aws_cloudwatch_event_target.guardduty_sns: Destruction complete after 0s
+module.ecr.aws_ecr_lifecycle_policy.services["medicore/appointment-service"]: Destruction complete after 0s
+module.networking.aws_route.private_nat[0]: Destruction complete after 0s
+module.secrets.aws_secretsmanager_secret_version.grafana: Destruction complete after 0s
+module.ecr.aws_ecr_lifecycle_policy.services["medicore/frontend"]: Destruction complete after 1s
+module.cloudtrail.aws_s3_bucket_server_side_encryption_configuration.cloudtrail: Destruction complete after 1s
+module.irsa.aws_iam_role_policy_attachment.appointment: Destruction complete after 1s
+module.irsa.aws_iam_role_policy_attachment.medication: Destruction complete after 1s
+module.cloudtrail.aws_s3_bucket_versioning.cloudtrail: Destruction complete after 1s
+module.ecr.aws_ecr_lifecycle_policy.services["medicore/user-service"]: Destruction complete after 0s
+module.security_alerts.aws_cloudwatch_metric_alarm.auth_failure_spike: Destruction complete after 0s
+module.cloudtrail.aws_cloudtrail.main: Destruction complete after 0s
+module.networking.aws_route_table_association.private[0]: Destruction complete after 0s
+module.irsa.aws_iam_role_policy_attachment.billing: Destruction complete after 1s
+module.irsa.aws_iam_role_policy_attachment.encounter: Destruction complete after 1s
+module.irsa.aws_iam_role_policy_attachment.patient: Destruction complete after 0s
+module.ecr.aws_ecr_lifecycle_policy.services["medicore/patient-service"]: Destruction complete after 0s
+module.networking.aws_iam_role_policy.vpc_flow_logs[0]: Destruction complete after 0s
+module.ecr.aws_ecr_lifecycle_policy.services["medicore/prescription-service"]: Destruction complete after 0s
+module.irsa.aws_iam_role_policy_attachment.prescription: Destruction complete after 0s
+module.ingress.aws_iam_role_policy_attachment.aws_load_balancer_controller: Destruction complete after 0s
+module.logging.aws_iam_role_policy_attachment.fluent_bit: Destruction complete after 0s
+module.networking.aws_route_table_association.public[1]: Destruction complete after 0s
+module.secrets.random_password.db_password: Destruction complete after 0s
+module.secrets.aws_iam_role_policy_attachment.db_rotation: Destruction complete after 3s
+module.cloudtrail.aws_iam_role_policy.cloudtrail_cw: Destruction complete after 0s
+module.security_alerts.aws_cloudwatch_metric_alarm.waf_block_spike: Destruction complete after 1s
+module.cloudtrail.aws_s3_bucket_public_access_block.cloudtrail: Destruction complete after 1s
+module.security_alerts.aws_sns_topic_policy.default: Destruction complete after 1s
+module.security_alerts.aws_cloudwatch_event_rule.guardduty_findings: Destruction complete after 1s
+module.waf.aws_wafv2_web_acl_logging_configuration.waf_logging: Destruction complete after 3s
+module.secrets.random_password.grafana_password: Destruction complete after 0s
+module.irsa.aws_iam_policy.lab: Destruction complete after 2s
+module.irsa.aws_iam_policy.provider: Destruction complete after 2s
+module.irsa.aws_iam_policy.user: Destruction complete after 2s
+module.secrets.aws_iam_policy.external_secrets: Destruction complete after 2s
+module.secrets.aws_iam_role.external_secrets: Destruction complete after 2s
+module.irsa.aws_iam_policy.appointment: Destruction complete after 2s
+module.cloudtrail.aws_s3_bucket_policy.cloudtrail: Destruction complete after 3s
+module.irsa.aws_iam_policy.medication: Destruction complete after 3s
+module.irsa.aws_iam_policy.billing: Destruction complete after 3s
+module.networking.aws_route_table.private[1]: Destruction complete after 3s
+module.networking.aws_route_table.private[0]: Destruction complete after 4s
+module.irsa.aws_iam_policy.encounter: Destruction complete after 2s
+module.networking.aws_cloudwatch_log_group.vpc_flow_logs[0]: Destruction complete after 0s
+module.irsa.aws_iam_policy.patient: Destruction complete after 1s
+module.networking.aws_iam_role.vpc_flow_logs[0]: Destruction complete after 1s
+module.irsa.aws_iam_role.service_roles["prescription-service"]: Destruction complete after 1s
+module.irsa.aws_iam_role.service_roles["medication-service"]: Destruction complete after 1s
+module.irsa.aws_iam_role.service_roles["patient-service"]: Destruction complete after 1s
+module.irsa.aws_iam_role.service_roles["user-service"]: Destruction complete after 1s
+module.irsa.aws_iam_role.service_roles["billing-service"]: Destruction complete after 1s
+module.irsa.aws_iam_policy.prescription: Destruction complete after 1s
+module.irsa.aws_iam_role.service_roles["appointment-service"]: Destruction complete after 1s
+module.ingress.aws_iam_role.aws_load_balancer_controller: Destruction complete after 1s
+module.irsa.aws_iam_role.service_roles["lab-service"]: Destruction complete after 1s
+module.irsa.aws_iam_role.service_roles["provider-service"]: Destruction complete after 1s
+module.ingress.aws_iam_policy.aws_load_balancer_controller: Destruction complete after 1s
+module.irsa.aws_iam_role.service_roles["encounter-service"]: Destruction complete after 3s
+module.cloudtrail.aws_cloudwatch_log_group.cloudtrail: Destruction complete after 0s
+module.logging.aws_iam_policy.fluent_bit: Destruction complete after 1s
+module.secrets.aws_iam_policy.db_rotation: Destruction complete after 1s
+module.logging.aws_iam_role.fluent_bit: Destruction complete after 1s
+module.networking.aws_route_table.public: Destruction complete after 1s
+module.waf.aws_cloudwatch_log_group.waf_logs: Destruction complete after 1s
+module.secrets.aws_iam_role.db_rotation: Destruction complete after 1s
+module.security_alerts.aws_sns_topic.security_alerts: Destruction complete after 1s
+module.secrets.aws_secretsmanager_secret.grafana: Destruction complete after 1s
+module.logging.aws_cloudwatch_log_group.application_logs: Destruction complete after 0s
+module.cloudtrail.aws_iam_role.cloudtrail: Destruction complete after 1s
+module.logging.aws_cloudwatch_log_group.dataplane_logs: Destruction complete after 0s
+module.logging.aws_cloudwatch_log_group.host_logs: Destruction complete after 0s
+module.secrets.aws_secretsmanager_secret.database: Destruction complete after 0s
+module.waf.aws_wafv2_web_acl.public_alb: Destruction complete after 0s
+module.irsa.aws_iam_openid_connect_provider.eks: Destruction complete after 1s
+module.cloudtrail.aws_s3_bucket.cloudtrail: Destruction complete after 5s
+module.bastion.aws_instance.this: Destruction complete after 21s
+module.bastion.aws_iam_role_policy_attachment.ssm: Destruction complete after 0s
+module.bastion.aws_iam_instance_profile.this: Destruction complete after 0s
+module.bastion.aws_iam_role.this: Destruction complete after 1s
+module.networking.aws_nat_gateway.main[0]: Destruction complete after 1m1s
+module.networking.aws_internet_gateway.main: Destruction complete after 1s
+module.networking.aws_subnet.public[0]: Destruction complete after 1s
+module.networking.aws_subnet.public[1]: Destruction complete after 2s
+module.networking.aws_eip.nat[0]: Destruction complete after 2s
+module.rds.aws_db_instance.this[0]: Destruction complete after 1m53s
+module.rds.aws_db_subnet_group.rds[0]: Destruction complete after 0s
+module.rds.aws_kms_key.rds[0]: Destruction complete after 1s
+module.rds.aws_security_group.rds[0]: Destruction complete after 2s
+module.networking.aws_security_group.bastion: Destruction complete after 1s
+module.eks.aws_eks_node_group.this: Destruction complete after 10m21s
+module.eks.aws_launch_template.nodes: Destruction complete after 1s
+module.eks.aws_iam_role_policy_attachment.cni: Destruction complete after 1s
+module.eks.aws_iam_role_policy_attachment.ecr_pull: Destruction complete after 1s
+module.eks.aws_iam_role_policy_attachment.worker_node: Destruction complete after 1s
+module.eks.aws_iam_role.nodes: Destruction complete after 2s
+module.eks.aws_eks_cluster.this: Destruction complete after 2m16s
+module.networking.aws_subnet.private[0]: Destruction complete after 1s
+module.networking.aws_subnet.private[1]: Destruction complete after 1s
+module.networking.aws_security_group.eks_cluster: Destruction complete after 1s
+module.networking.aws_vpc.main: Destruction complete after 1s
+module.eks.aws_iam_role_policy_attachment.cluster_policy: Destruction complete after 2s
+module.eks.aws_iam_role.cluster: Destruction complete after 1s
+
+--- [3/4] ECR Repository Destroy & Terraform State Count = 0 ---
+      - "medicore/lab-service"          = "116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/lab-service"
+      - "medicore/medication-service"   = "116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/medication-service"
+      - "medicore/patient-service"      = "116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/patient-service"
+      - "medicore/prescription-service" = "116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/prescription-service"
+      - "medicore/provider-service"     = "116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/provider-service"
+      - "medicore/user-service"         = "116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/user-service"
+  - rds_db_port                 = 3306 -> null
+module.ecr.aws_ecr_repository.services["medicore/billing-service"]: Destroying... [id=medicore/billing-service]
+module.ecr.aws_ecr_repository.services["medicore/encounter-service"]: Destroying... [id=medicore/encounter-service]
+module.ecr.aws_ecr_repository.services["medicore/frontend"]: Destroying... [id=medicore/frontend]
+module.ecr.aws_ecr_repository.services["medicore/prescription-service"]: Destroying... [id=medicore/prescription-service]
+module.ecr.aws_ecr_repository.services["medicore/patient-service"]: Destroying... [id=medicore/patient-service]
+module.ecr.aws_ecr_repository.services["medicore/appointment-service"]: Destroying... [id=medicore/appointment-service]
+module.ecr.aws_ecr_repository.services["medicore/user-service"]: Destroying... [id=medicore/user-service]
+module.ecr.aws_ecr_repository.services["medicore/provider-service"]: Destroying... [id=medicore/provider-service]
+module.ecr.aws_ecr_repository.services["medicore/lab-service"]: Destroying... [id=medicore/lab-service]
+module.ecr.aws_ecr_repository.services["medicore/medication-service"]: Destroying... [id=medicore/medication-service]
+module.ecr.aws_ecr_repository.services["medicore/patient-service"]: Destruction complete after 1s
+module.ecr.aws_ecr_repository.services["medicore/medication-service"]: Destruction complete after 1s
+module.ecr.aws_ecr_repository.services["medicore/lab-service"]: Destruction complete after 1s
+module.ecr.aws_ecr_repository.services["medicore/frontend"]: Destruction complete after 1s
+module.ecr.aws_ecr_repository.services["medicore/prescription-service"]: Destruction complete after 1s
+module.ecr.aws_ecr_repository.services["medicore/user-service"]: Destruction complete after 1s
+module.ecr.aws_ecr_repository.services["medicore/appointment-service"]: Destruction complete after 1s
+module.ecr.aws_ecr_repository.services["medicore/provider-service"]: Destruction complete after 1s
+module.ecr.aws_ecr_repository.services["medicore/encounter-service"]: Destruction complete after 1s
+module.ecr.aws_ecr_repository.services["medicore/billing-service"]: Destruction complete after 1s
+Destroy complete! Resources: 10 destroyed.
+=== TERRAFORM STATE COUNT ===
+       0
+
+--- [4/4] Final AWS Account Zero-Resource Verification Sweep ---
+EKS clusters: 
+RDS instances: 
+RDS snapshots: 
+EC2 running/pending/stopped instances: 
+EBS volumes: 
+Elastic IPs: 
+NAT Gateways (active): 
+NLB/ALB load balancers: 
+Classic ELBs: 
+ECR repositories: 
+Non-default VPCs: 
+CloudTrail trails: 
+Secrets (active): 
+Secrets (including pending deletion): 
+Customer KMS keys: 4f69c78b-2f3e-4af4-82cc-8edbb3d0faa6:PendingDeletion 
+S3 buckets: titanops-terraform-state-116715028929

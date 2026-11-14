@@ -1,0 +1,330 @@
+# =============================================================================
+# TitanOps HMS - EKS Cluster, Worker Nodes, VPC & RDS MySQL Provisioning Log
+# Region: ap-south-1 | Cluster: titanops-dev-eks | Date: 2026-11-12
+# =============================================================================
+
+--- [1/3] EKS Managed Node Group Creation (m7i-flex.large) ---
+module.eks.aws_eks_cluster.this: Refreshing state... [id=titanops-dev-eks]
+module.eks.aws_eks_node_group.this: Refreshing state... [id=titanops-dev-eks:titanops-dev-nodes]
+  # module.eks.aws_eks_node_group.this is tainted, so must be replaced
+-/+ resource "aws_eks_node_group" "this" {
+module.eks.aws_eks_node_group.this: Destroying... [id=titanops-dev-eks:titanops-dev-nodes]
+module.rds.aws_db_instance.this[0]: Creating...
+module.eks.aws_eks_node_group.this: Destruction complete after 8s
+module.eks.aws_eks_node_group.this: Creating...
+module.eks.aws_eks_node_group.this: Still creating... [10s elapsed]
+module.eks.aws_eks_node_group.this: Still creating... [20s elapsed]
+module.eks.aws_eks_node_group.this: Still creating... [30s elapsed]
+module.eks.aws_eks_node_group.this: Still creating... [40s elapsed]
+module.eks.aws_eks_node_group.this: Still creating... [50s elapsed]
+module.eks.aws_eks_node_group.this: Still creating... [1m0s elapsed]
+module.eks.aws_eks_node_group.this: Still creating... [1m10s elapsed]
+module.eks.aws_eks_node_group.this: Still creating... [1m20s elapsed]
+module.eks.aws_eks_node_group.this: Creation complete after 1m21s [id=titanops-dev-eks:titanops-dev-nodes]
+
+--- [2/3] Terraform Apply: AWS RDS MySQL 8.0.46 (db.t3.micro) & Full Outputs ---
+module.secrets.random_password.grafana_password: Refreshing state... [id=none]
+module.secrets.random_password.db_password: Refreshing state... [id=none]
+module.networking.data.aws_availability_zones.available: Reading...
+module.eks.data.aws_iam_policy_document.cluster_assume_role: Reading...
+module.networking.aws_vpc.main: Refreshing state... [id=vpc-0952cceece78709af]
+module.secrets.aws_secretsmanager_secret.database: Refreshing state... [id=arn:aws:secretsmanager:ap-south-1:116715028929:secret:titanops/dev/database-20261112044116685900000001-HhUXcS]
+module.secrets.aws_secretsmanager_secret.grafana: Refreshing state... [id=arn:aws:secretsmanager:ap-south-1:116715028929:secret:titanops/dev/grafana-20261112044117606100000005-G5DsKL]
+module.secrets.aws_iam_role.db_rotation: Refreshing state... [id=titanops-dev-db-secret-rotation-role]
+module.rds.aws_kms_key.rds[0]: Refreshing state... [id=4f69c78b-2f3e-4af4-82cc-8edbb3d0faa6]
+module.eks.data.aws_iam_policy_document.cluster_assume_role: Read complete after 0s [id=3552664922]
+module.eks.aws_iam_role.cluster: Refreshing state... [id=titanops-dev-eks-cluster-role]
+module.networking.data.aws_availability_zones.available: Read complete after 1s [id=ap-south-1]
+module.secrets.aws_iam_policy.db_rotation: Refreshing state... [id=arn:aws:iam::116715028929:policy/titanops-dev-db-secret-rotation-policy]
+module.secrets.aws_secretsmanager_secret_version.grafana: Refreshing state... [id=arn:aws:secretsmanager:ap-south-1:116715028929:secret:titanops/dev/grafana-20261112044117606100000005-G5DsKL|terraform-20261112044123630400000007]
+module.secrets.aws_iam_policy.external_secrets: Refreshing state... [id=arn:aws:iam::116715028929:policy/titanops-dev-eso-policy]
+module.rds.aws_kms_alias.rds[0]: Refreshing state... [id=alias/titanops-dev-rds]
+module.networking.aws_subnet.private[1]: Refreshing state... [id=subnet-021779af992475d2b]
+module.networking.aws_security_group.eks_cluster: Refreshing state... [id=sg-0d206164164beb795]
+module.networking.aws_security_group.bastion: Refreshing state... [id=sg-03a0e0f1ba2d1d200]
+module.networking.aws_subnet.private[0]: Refreshing state... [id=subnet-0829c965dadd5dd46]
+module.rds.aws_security_group.rds[0]: Refreshing state... [id=sg-065886324e877c405]
+module.rds.aws_db_subnet_group.rds[0]: Refreshing state... [id=titanops-dev-rds-subnet-group]
+module.secrets.aws_iam_role_policy_attachment.db_rotation: Refreshing state... [id=titanops-dev-db-secret-rotation-role-2026111204412496010000000a]
+module.eks.aws_iam_role_policy_attachment.cluster_policy: Refreshing state... [id=titanops-dev-eks-cluster-role-20261112044124074600000008]
+module.eks.aws_eks_cluster.this: Refreshing state... [id=titanops-dev-eks]
+module.secrets.data.aws_iam_policy_document.eso_assume_role: Reading...
+module.secrets.data.aws_iam_policy_document.eso_assume_role: Read complete after 0s [id=2447873039]
+module.secrets.aws_iam_role.external_secrets: Refreshing state... [id=titanops-dev-external-secrets-role]
+module.secrets.aws_iam_role_policy_attachment.external_secrets: Refreshing state... [id=titanops-dev-external-secrets-role-20261112044942607800000016]
+
+Terraform used the selected providers to generate the following execution plan.
+Resource actions are indicated with the following symbols:
+  + create
+
+Terraform will perform the following actions:
+
+  # module.rds.aws_db_instance.this[0] will be created
+  + resource "aws_db_instance" "this" {
+      + address                               = (known after apply)
+      + allocated_storage                     = 20
+      + apply_immediately                     = false
+      + arn                                   = (known after apply)
+      + auto_minor_version_upgrade            = true
+      + availability_zone                     = (known after apply)
+      + backup_retention_period               = 1
+      + backup_target                         = (known after apply)
+      + backup_window                         = (known after apply)
+      + ca_cert_identifier                    = (known after apply)
+      + character_set_name                    = (known after apply)
+      + copy_tags_to_snapshot                 = true
+      + database_insights_mode                = (known after apply)
+      + db_name                               = "medicore_hms"
+      + db_subnet_group_name                  = "titanops-dev-rds-subnet-group"
+      + dedicated_log_volume                  = false
+      + delete_automated_backups              = true
+      + deletion_protection                   = false
+      + domain_fqdn                           = (known after apply)
+      + endpoint                              = (known after apply)
+      + engine                                = "mysql"
+      + engine_lifecycle_support              = (known after apply)
+      + engine_version                        = "8.0.46"
+      + engine_version_actual                 = (known after apply)
+      + final_snapshot_identifier             = "titanops-dev-mysql-final-snapshot"
+      + hosted_zone_id                        = (known after apply)
+      + id                                    = (known after apply)
+      + identifier                            = "titanops-dev-mysql"
+      + identifier_prefix                     = (known after apply)
+      + instance_class                        = "db.t3.micro"
+      + iops                                  = (known after apply)
+      + kms_key_id                            = "arn:aws:kms:ap-south-1:116715028929:key/4f69c78b-2f3e-4af4-82cc-8edbb3d0faa6"
+      + latest_restorable_time                = (known after apply)
+      + license_model                         = (known after apply)
+      + listener_endpoint                     = (known after apply)
+      + maintenance_window                    = (known after apply)
+      + master_user_secret                    = (known after apply)
+      + master_user_secret_kms_key_id         = (known after apply)
+      + max_allocated_storage                 = 0
+      + monitoring_interval                   = 0
+      + monitoring_role_arn                   = (known after apply)
+      + multi_az                              = false
+      + nchar_character_set_name              = (known after apply)
+      + network_type                          = (known after apply)
+      + option_group_name                     = (known after apply)
+      + parameter_group_name                  = (known after apply)
+      + password                              = (sensitive value)
+      + performance_insights_enabled          = false
+      + performance_insights_kms_key_id       = (known after apply)
+      + performance_insights_retention_period = (known after apply)
+      + port                                  = 3306
+      + publicly_accessible                   = false
+      + replica_mode                          = (known after apply)
+      + replicas                              = (known after apply)
+      + resource_id                           = (known after apply)
+      + skip_final_snapshot                   = true
+      + snapshot_identifier                   = (known after apply)
+      + status                                = (known after apply)
+      + storage_encrypted                     = true
+      + storage_throughput                    = (known after apply)
+      + storage_type                          = "gp3"
+      + tags                                  = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "Terraform"
+          + "Name"        = "titanops-dev-mysql"
+          + "Project"     = "titanops"
+          + "Role"        = "managed-database"
+        }
+      + tags_all                              = {
+          + "Environment" = "dev"
+          + "ManagedBy"   = "Terraform"
+          + "Name"        = "titanops-dev-mysql"
+          + "Project"     = "titanops"
+          + "Role"        = "managed-database"
+        }
+      + timezone                              = (known after apply)
+      + username                              = "medicore"
+      + vpc_security_group_ids                = [
+          + "sg-065886324e877c405",
+        ]
+    }
+
+  # module.secrets.aws_secretsmanager_secret_version.database will be created
+  + resource "aws_secretsmanager_secret_version" "database" {
+      + arn                  = (known after apply)
+      + has_secret_string_wo = (known after apply)
+      + id                   = (known after apply)
+      + secret_id            = "arn:aws:secretsmanager:ap-south-1:116715028929:secret:titanops/dev/database-20261112044116685900000001-HhUXcS"
+      + secret_string        = (sensitive value)
+      + version_id           = (known after apply)
+      + version_stages       = (known after apply)
+    }
+
+Plan: 2 to add, 0 to change, 0 to destroy.
+
+Changes to Outputs:
+  + rds_db_address                    = (known after apply)
+  + rds_db_endpoint                   = (known after apply)
+  + rds_db_instance_id                = (known after apply)
+  + rds_jdbc_connection_url           = (known after apply)
+module.rds.aws_db_instance.this[0]: Creating...
+module.rds.aws_db_instance.this[0]: Still creating... [10s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [20s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [30s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [40s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [50s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [1m0s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [1m10s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [1m20s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [1m30s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [1m40s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [1m50s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [2m0s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [2m10s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [2m20s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [2m30s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [2m40s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [2m50s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [3m0s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [3m10s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [3m20s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [3m30s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [3m40s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [3m50s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [4m0s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [4m10s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [4m20s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [4m30s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [4m40s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [4m50s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [5m0s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [5m10s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [5m20s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [5m30s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [5m40s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [5m50s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [6m0s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [6m10s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [6m20s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [6m30s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [6m40s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [6m50s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [7m0s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [7m10s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [7m20s elapsed]
+module.rds.aws_db_instance.this[0]: Still creating... [7m30s elapsed]
+module.rds.aws_db_instance.this[0]: Creation complete after 7m36s [id=db-XPKJU7B5Z36STRYD7BYBLLG3OY]
+module.secrets.aws_secretsmanager_secret_version.database: Creating...
+module.secrets.aws_secretsmanager_secret_version.database: Creation complete after 8s [id=arn:aws:secretsmanager:ap-south-1:116715028929:secret:titanops/dev/database-20261112044116685900000001-HhUXcS|terraform-20261112054133148900000001]
+
+Warning: Resource targeting is in effect
+
+You are creating a plan with the -target option, which means that the result of
+this plan may not represent all of the changes requested by the current
+configuration.
+
+The -target option is not for routine use, and is provided only for exceptional
+situations such as recovering from errors or mistakes, or when Terraform
+specifically suggests to use it as part of an error message.
+
+Warning: Applied changes may be incomplete
+
+The plan was created with the -target option in effect, so some changes
+requested in the configuration may have been ignored and the output values may
+not be fully updated. Run the following command to verify that no other changes
+are pending:
+    terraform plan
+
+Note that the -target option is not suitable for routine use, and is provided
+only for exceptional situations such as recovering from errors or mistakes, or
+when Terraform specifically suggests to use it as part of an error message.
+
+Apply complete! Resources: 2 added, 0 changed, 0 destroyed.
+
+Outputs:
+
+acm_certificate_arn = ""
+application_log_group_arn = "arn:aws:logs:ap-south-1:116715028929:log-group:/aws/containerinsights/titanops-dev-eks/application"
+application_log_group_name = "/aws/containerinsights/titanops-dev-eks/application"
+auth_failure_alarm_arn = "arn:aws:cloudwatch:ap-south-1:116715028929:alarm:titanops-dev-auth-failure-spike"
+aws_load_balancer_controller_role_arn = "arn:aws:iam::116715028929:role/titanops-dev-aws-load-balancer-controller"
+bastion_instance_id = "i-0f460b02ce05aa88c"
+bastion_private_ip = "10.0.11.87"
+cloudtrail_arn = "arn:aws:cloudtrail:ap-south-1:116715028929:trail/titanops-dev-audit-trail"
+cloudtrail_bucket_name = "titanops-dev-cloudtrail-116715028929"
+ecr_repository_arns = {
+  "medicore/appointment-service" = "arn:aws:ecr:ap-south-1:116715028929:repository/medicore/appointment-service"
+  "medicore/billing-service" = "arn:aws:ecr:ap-south-1:116715028929:repository/medicore/billing-service"
+  "medicore/encounter-service" = "arn:aws:ecr:ap-south-1:116715028929:repository/medicore/encounter-service"
+  "medicore/frontend" = "arn:aws:ecr:ap-south-1:116715028929:repository/medicore/frontend"
+  "medicore/lab-service" = "arn:aws:ecr:ap-south-1:116715028929:repository/medicore/lab-service"
+  "medicore/medication-service" = "arn:aws:ecr:ap-south-1:116715028929:repository/medicore/medication-service"
+  "medicore/patient-service" = "arn:aws:ecr:ap-south-1:116715028929:repository/medicore/patient-service"
+  "medicore/prescription-service" = "arn:aws:ecr:ap-south-1:116715028929:repository/medicore/prescription-service"
+  "medicore/provider-service" = "arn:aws:ecr:ap-south-1:116715028929:repository/medicore/provider-service"
+  "medicore/user-service" = "arn:aws:ecr:ap-south-1:116715028929:repository/medicore/user-service"
+}
+ecr_repository_urls = {
+  "medicore/appointment-service" = "116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/appointment-service"
+  "medicore/billing-service" = "116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/billing-service"
+  "medicore/encounter-service" = "116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/encounter-service"
+  "medicore/frontend" = "116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/frontend"
+  "medicore/lab-service" = "116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/lab-service"
+  "medicore/medication-service" = "116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/medication-service"
+  "medicore/patient-service" = "116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/patient-service"
+  "medicore/prescription-service" = "116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/prescription-service"
+  "medicore/provider-service" = "116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/provider-service"
+  "medicore/user-service" = "116715028929.dkr.ecr.ap-south-1.amazonaws.com/medicore/user-service"
+}
+eks_cluster_endpoint = "https://743D951E29F99430C6EA6B30C8335905.gr7.ap-south-1.eks.amazonaws.com"
+eks_cluster_name = "titanops-dev-eks"
+eks_endpoint_private_access = true
+eks_endpoint_public_access = true
+eks_node_group_name = "titanops-dev-nodes"
+eks_oidc_issuer = "https://oidc.eks.ap-south-1.amazonaws.com/id/743D951E29F99430C6EA6B30C8335905"
+eks_public_access_cidrs = toset([
+  "152.58.16.244/32",
+])
+fluent_bit_role_arn = "arn:aws:iam::116715028929:role/titanops-dev-fluentbit-logging-role"
+irsa_oidc_provider_arn = "arn:aws:iam::116715028929:oidc-provider/oidc.eks.ap-south-1.amazonaws.com/id/743D951E29F99430C6EA6B30C8335905"
+irsa_service_role_arns = {
+  "appointment-service" = "arn:aws:iam::116715028929:role/titanops-dev-appointment-service-irsa-role"
+  "billing-service" = "arn:aws:iam::116715028929:role/titanops-dev-billing-service-irsa-role"
+  "encounter-service" = "arn:aws:iam::116715028929:role/titanops-dev-encounter-service-irsa-role"
+  "lab-service" = "arn:aws:iam::116715028929:role/titanops-dev-lab-service-irsa-role"
+  "medication-service" = "arn:aws:iam::116715028929:role/titanops-dev-medication-service-irsa-role"
+  "patient-service" = "arn:aws:iam::116715028929:role/titanops-dev-patient-service-irsa-role"
+  "prescription-service" = "arn:aws:iam::116715028929:role/titanops-dev-prescription-service-irsa-role"
+  "provider-service" = "arn:aws:iam::116715028929:role/titanops-dev-provider-service-irsa-role"
+  "user-service" = "arn:aws:iam::116715028929:role/titanops-dev-user-service-irsa-role"
+}
+private_subnet_ids = [
+  "subnet-0829c965dadd5dd46",
+  "subnet-021779af992475d2b",
+]
+public_subnet_ids = [
+  "subnet-048f422b373bd4879",
+  "subnet-00bbd1297b070d46a",
+]
+rds_db_address = "titanops-dev-mysql.cjg06o42uy2x.ap-south-1.rds.amazonaws.com"
+rds_db_endpoint = "titanops-dev-mysql.cjg06o42uy2x.ap-south-1.rds.amazonaws.com:3306"
+rds_db_instance_id = "db-XPKJU7B5Z36STRYD7BYBLLG3OY"
+rds_db_name = "medicore_hms"
+rds_db_port = 3306
+rds_jdbc_connection_url = "jdbc:mysql://titanops-dev-mysql.cjg06o42uy2x.ap-south-1.rds.amazonaws.com:3306/medicore_hms?useSSL=true&requireSSL=true&verifyServerCertificate=false&allowPublicKeyRetrieval=true"
+rds_kms_key_arn = "arn:aws:kms:ap-south-1:116715028929:key/4f69c78b-2f3e-4af4-82cc-8edbb3d0faa6"
+rds_multi_az_enabled = false
+secrets_db_secret_arn = "arn:aws:secretsmanager:ap-south-1:116715028929:secret:titanops/dev/database-20261112044116685900000001-HhUXcS"
+secrets_external_secrets_role_arn = "arn:aws:iam::116715028929:role/titanops-dev-external-secrets-role"
+secrets_grafana_secret_arn = "arn:aws:secretsmanager:ap-south-1:116715028929:secret:titanops/dev/grafana-20261112044117606100000005-G5DsKL"
+security_alerts_topic_arn = "arn:aws:sns:ap-south-1:116715028929:titanops-dev-security-alerts"
+vpc_flow_log_group_arn = "arn:aws:logs:ap-south-1:116715028929:log-group:/aws/vpc/titanops-dev-flow-logs"
+vpc_flow_log_id = "fl-00725656f4dcaf6e2"
+vpc_id = "vpc-0952cceece78709af"
+waf_log_group_arn = "arn:aws:logs:ap-south-1:116715028929:log-group:aws-waf-logs-titanops-dev-alb"
+waf_web_acl_arn = "arn:aws:wafv2:ap-south-1:116715028929:regional/webacl/titanops-dev-alb-waf/ac98de4d-6657-4883-b0a2-8f9f428e09e2"
+
+
+--- [3/3] EKS Kubeconfig & Node Readiness Verification ---
+Command exited with code 0.
+
+Command output:
+Added new context arn:aws:eks:ap-south-1:116715028929:cluster/titanops-dev-eks to /Users/Vraj/.kube/config
+NAME                                         STATUS   ROLES    AGE   VERSION               INTERNAL-IP   EXTERNAL-IP   OS-IMAGE                        KERNEL-VERSION                            CONTAINER-RUNTIME
+ip-10-0-11-183.ap-south-1.compute.internal   Ready    <none>   77s   v1.37.1-eks-8418f54   10.0.11.183   <none>        Amazon Linux 2023.12.20261102   6.18.56-125.164.amzn2023.x86_64 (amd64)   containerd://2.3.7+unknown
+ip-10-0-12-85.ap-south-1.compute.internal    Ready    <none>   77s   v1.37.1-eks-8418f54   10.0.12.85    <none>        Amazon Linux 2023.12.20261102   6.18.56-125.164.amzn2023.x86_64 (amd64)   containerd://2.3.7+unknown
+Docker Desktop READY
